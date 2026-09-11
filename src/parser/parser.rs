@@ -1,6 +1,4 @@
-use crate::{
-  lexer::tokens::{Token},
-};
+use crate::lexer::tokens::Token;
 
 pub struct Parser {
   pub tokens: Vec<Token>,

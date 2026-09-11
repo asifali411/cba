@@ -3,6 +3,12 @@ use std::fmt;
 use crate::primitives::span::Span;
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum FStringPart {
+  Text(String),
+  Ident(String),
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
   Equal,
   LeftBrace,
@@ -15,7 +21,7 @@ pub enum TokenKind {
   Needs,
   Ident(String),
 
-  Text(String),
+  FString(Vec<FStringPart>),
   Eof,
 }
 

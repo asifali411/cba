@@ -1,5 +1,5 @@
 use crate::{
-  lexer::tokens::{Token, TokenKind},
+  lexer::tokens::{FStringPart, Token, TokenKind},
   primitives::result::LResult,
 };
 
@@ -51,8 +51,8 @@ impl Lexer {
 
       '#' => self.skip_comment(),
 
-      '\'' => self.scan_text('\'')?,
-      '"' => self.scan_text('"')?,
+      '\'' => self.scan_fstring('\'')?,
+      '"' => self.scan_fstring('"')?,
 
       c if c.is_ascii_alphabetic() => self.scan_identifier(),
 
@@ -78,11 +78,16 @@ impl Lexer {
     self.add_token(kind);
   }
 
-  fn scan_text(&mut self, quote: char) -> LResult<()> {
-    let mut value = String::new();
+  fn scan_fstring(&mut self, quote: char) -> LResult<()> {
+    let mut parts = Vec::new();
+    let mut text = String::new();
 
     while !self.is_at_end() {
       match self.peek() {
+        c if c == quote => {
+          break;
+        }
+
         '\\' => {
           self.advance();
 
@@ -93,19 +98,58 @@ impl Lexer {
             '"' => '"',
             '\'' => '\'',
             '\\' => '\\',
+            '{' => '{',
+            '}' => '}',
             other => {
               return Err(format!("Invalid escape character '{}'", other));
             }
           };
 
-          value.push(escaped);
+          text.push(escaped);
           self.advance();
         }
 
-        c if c == quote => break,
+        '{' => {
+          if !text.is_empty() {
+            parts.push(FStringPart::Text(std::mem::take(&mut text)));
+          }
+
+          self.advance();
+
+          if self.is_at_end() {
+            return Err("unterminated string expression".into());
+          }
+
+          let first = self.peek();
+
+          if !first.is_ascii_alphabetic() && first != '_' {
+            return Err(format!("expected identifier after '{{', found '{}'", first));
+          }
+
+          let mut ident = String::new();
+
+          while !self.is_at_end() {
+            let c = self.peek();
+
+            if c.is_ascii_alphanumeric() || c == '_' {
+              ident.push(c);
+              self.advance();
+            } else {
+              break;
+            }
+          }
+
+          if self.is_at_end() || self.peek() != '}' {
+            return Err(format!("expected '}}' after string expression '{}'", ident));
+          }
+
+          self.advance();
+
+          parts.push(FStringPart::Ident(ident));
+        }
 
         c => {
-          value.push(c);
+          text.push(c);
           self.advance();
         }
       }
@@ -116,7 +160,13 @@ impl Lexer {
     }
 
     self.advance();
-    self.add_token(TokenKind::Text(value));
+
+    if !text.is_empty() {
+      parts.push(FStringPart::Text(text));
+    }
+
+    self.add_token(TokenKind::FString(parts));
+
     Ok(())
   }
 
