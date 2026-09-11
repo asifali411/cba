@@ -54,6 +54,8 @@ impl Lexer {
       '\'' => self.scan_text('\'')?,
       '"' => self.scan_text('"')?,
 
+      c if c.is_ascii_alphabetic() => self.scan_identifier(),
+
       _ => {}
     }
 
@@ -64,6 +66,16 @@ impl Lexer {
     while self.peek() != '\n' && !self.is_at_end() {
       self.advance();
     }
+  }
+
+  fn scan_identifier(&mut self) {
+    while self.peek().is_ascii_alphanumeric() {
+      self.advance();
+    }
+
+    let lexeme: String = self.source[self.start..self.current].iter().collect();
+    let kind = Self::keyword(&lexeme).unwrap_or(TokenKind::Ident(lexeme));
+    self.add_token(kind);
   }
 
   fn scan_text(&mut self, quote: char) -> LResult<()> {
@@ -106,5 +118,15 @@ impl Lexer {
     self.advance();
     self.add_token(TokenKind::Text(value));
     Ok(())
+  }
+
+  fn keyword(s: &str) -> Option<TokenKind> {
+    match s {
+      "var" => Some(TokenKind::Var),
+      "run" => Some(TokenKind::Run),
+      "task" => Some(TokenKind::Task),
+      "needs" => Some(TokenKind::Needs),
+      _ => None,
+    }
   }
 }

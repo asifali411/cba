@@ -9,6 +9,12 @@ pub enum TokenKind {
   RightBrace,
   SemiColon,
 
+  Var,
+  Task,
+  Run,
+  Needs,
+  Ident(String),
+
   Text(String),
   Eof,
 }
