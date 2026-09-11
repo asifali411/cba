@@ -1,4 +1,7 @@
-use crate::{lexer::tokens::Token, primitives::result::LResult};
+use crate::{
+  lexer::tokens::{Token, TokenKind},
+  primitives::result::LResult,
+};
 
 pub struct Lexer {
   pub(crate) source: Vec<char>,
@@ -22,6 +25,35 @@ impl Lexer {
   }
 
   pub fn tokenize(&mut self) -> LResult<&Vec<Token>> {
+    while !self.is_at_end() {
+      self.start = self.current;
+      self.scan_token()?;
+    }
+    self.add_token(TokenKind::Eof);
     Ok(&self.tokens)
+  }
+
+  fn scan_token(&mut self) -> LResult<()> {
+    let c = self.advance();
+
+    match c {
+      ' ' | '\t' | '\r' => {}
+      '\n' => {
+        self.line += 1;
+        self.col = 1;
+      }
+
+      '#' => self.skip_comment(),
+
+      _ => {}
+    }
+
+    Ok(())
+  }
+
+  fn skip_comment(&mut self) {
+    while self.peek() != '\n' && !self.is_at_end() {
+      self.advance();
+    }
   }
 }
