@@ -4,6 +4,12 @@ use crate::primitives::span::Span;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
+  Equal,
+  LeftBrace,
+  RightBrace,
+  SemiColon,
+
+  Text(String),
   Eof,
 }
 
