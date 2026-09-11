@@ -1,4 +1,4 @@
-use crate::lexer::tokens::Token;
+use crate::{lexer::tokens::Token, primitives::result::LResult};
 
 pub struct Lexer {
   source: Vec<char>,
@@ -15,7 +15,7 @@ impl Lexer {
     }
   }
 
-  pub fn tokenize(&mut self) -> Vec<Token> {
-    self.tokens.clone()
+  pub fn tokenize(&mut self) -> LResult<&Vec<Token>> {
+    Ok(&self.tokens)
   }
 }

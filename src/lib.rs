@@ -6,7 +6,17 @@ mod lexer;
 mod primitives;
 
 pub fn run(source: String) -> ExitCode {
-  let lexer = Lexer::new(source);
+  let mut lexer = Lexer::new(source);
+
+  match lexer.tokenize() {
+    Ok(tokens) => {
+      println!("{:?}", tokens);
+    }
+    Err(err) => {
+      eprintln!("{}", err);
+      return ExitCode::FAILURE;
+    }
+  };
 
   ExitCode::SUCCESS
 }
