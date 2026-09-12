@@ -20,9 +20,11 @@ impl Executor {
       return Ok(());
     }
 
-    let task = self.tasks
+    let task = self
+      .tasks
       .get(task_name)
-      .ok_or_else(|| format!("unknown task: {task_name}"))?.clone();
+      .ok_or_else(|| format!("unknown task: {task_name}"))?
+      .clone();
 
     for dependency in &task.dependencies {
       self.execute_task(&dependency)?;
