@@ -1,8 +1,9 @@
 use std::process::ExitCode;
 
-use crate::{analyzer::analyzer::Analyzer, lexer::lexer::Lexer, parser::parser::Parser};
+use crate::{analyzer::analyzer::Analyzer, executor::executor::Executor, lexer::lexer::Lexer, parser::parser::Parser};
 
 mod analyzer;
+mod executor;
 mod lexer;
 mod parser;
 mod primitives;
@@ -18,7 +19,8 @@ pub fn run(source: String) -> ExitCode {
           let mut analyzer = Analyzer::new(&stmts);
           match analyzer.analyze() {
             Ok(tasks) => {
-              println!("{:?}", tasks);
+              
+              let mut executor = Executor::new(tasks);
             }
             Err(err) => {
               eprintln!("{}", err);
