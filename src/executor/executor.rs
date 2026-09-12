@@ -1,4 +1,9 @@
-use std::collections::{HashMap, HashSet};
+#[cfg(target_os = "windows")]
+use std::process::Command;
+use std::{
+  collections::{HashMap, HashSet},
+  process::ExitStatus,
+};
 
 use crate::{analyzer::task_plan::TaskPlan, primitives::result::EResult};
 
@@ -30,17 +35,34 @@ impl Executor {
       self.execute_task(&dependency)?;
     }
 
+    let mut exit_code = 0;
     for command in &task.commands {
-      self.run_command(command)?;
+      let exit_status = self.run_command(command)?;
+      exit_code = exit_status.code().unwrap_or(-1);
     }
 
     self.executed.insert(task_name.to_string());
 
+    if exit_code != 0 {
+      return Err(format!(
+        "process didn't exit successfully (exit code: {})",
+        exit_code
+      ));
+    }
+
     Ok(())
   }
 
-  fn run_command(&self, command: &str) -> EResult<()> {
-    println!("{:?}", command);
-    Ok(())
+  fn run_command(&self, command: &str) -> EResult<ExitStatus> {
+    #[cfg(target_os = "windows")]
+    let status = Command::new("cmd").args(["/C", command]).status();
+
+    #[cfg(not(target_os = "windows"))]
+    let status = Command::new("sh").args(["-c", command]).status();
+
+    match status {
+      Err(e) => Err(e.to_string()),
+      Ok(e) => Ok(e),
+    }
   }
 }

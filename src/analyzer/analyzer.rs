@@ -23,7 +23,6 @@ impl Analyzer {
   }
 
   pub fn analyze(&mut self, args: Vec<String>) -> AResult<&HashMap<String, TaskPlan>> {
-
     let args = args.join(" ");
     self.variables.insert("args".into(), args);
 
