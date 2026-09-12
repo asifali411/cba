@@ -15,9 +15,16 @@ pub fn run(source: String) -> ExitCode {
       let mut parser = Parser::new(tokens);
       match parser.parse() {
         Ok(stmts) => {
-          println!("{:?}", stmts);
-
           let mut analyzer = Analyzer::new(&stmts);
+          match analyzer.analyze() {
+            Ok(tasks) => {
+              println!("{:?}", tasks);
+            }
+            Err(err) => {
+              eprintln!("{}", err);
+              return ExitCode::FAILURE;
+            }
+          }
         }
         Err(err) => {
           eprintln!("{}", err);
