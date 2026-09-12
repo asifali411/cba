@@ -14,6 +14,15 @@ pub fn run(source: String) -> ExitCode {
       println!("{:?}", tokens);
 
       let mut parser = Parser::new(tokens);
+      match parser.parse() {
+        Ok(stmts) => {
+          println!("{:?}", stmts);
+        }
+        Err(err) => {
+          eprintln!("{}", err);
+          return ExitCode::FAILURE;
+        }
+      }
     }
     Err(err) => {
       eprintln!("{}", err);

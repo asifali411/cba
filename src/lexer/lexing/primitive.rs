@@ -18,28 +18,11 @@ impl Lexer {
     c
   }
 
-  pub(crate) fn match_next(&mut self, expected: char) -> bool {
-    if self.is_at_end() || self.source[self.current] != expected {
-      return false;
-    }
-    self.current += 1;
-    self.col += 1;
-    true
-  }
-
   pub(crate) fn peek(&self) -> char {
     if self.is_at_end() {
       '\0'
     } else {
       self.source[self.current]
-    }
-  }
-
-  pub(crate) fn peek_next(&self) -> char {
-    if self.current + 1 >= self.source.len() {
-      '\0'
-    } else {
-      self.source[self.current + 1]
     }
   }
 
