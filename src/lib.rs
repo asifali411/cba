@@ -11,7 +11,6 @@ pub fn run(source: String) -> ExitCode {
 
   match lexer.tokenize() {
     Ok(tokens) => {
-      println!("{:?}", tokens);
 
       let mut parser = Parser::new(tokens);
       match parser.parse() {
