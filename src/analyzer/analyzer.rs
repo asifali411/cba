@@ -22,7 +22,11 @@ impl Analyzer {
     }
   }
 
-  pub fn analyze(&mut self) -> AResult<&HashMap<String, TaskPlan>> {
+  pub fn analyze(&mut self, args: Vec<String>) -> AResult<&HashMap<String, TaskPlan>> {
+
+    let args = args.join(" ");
+    self.variables.insert("args".into(), args);
+
     for stmt in self.statements.clone() {
       match stmt {
         Stmt::Var { name, value } => {

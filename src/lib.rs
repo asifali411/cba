@@ -43,7 +43,7 @@ fn try_run(source: String) -> Result<(), Box<dyn std::error::Error>> {
   let stmts = parser.parse()?;
 
   let mut analyzer = Analyzer::new(&stmts);
-  let tasks = analyzer.analyze()?;
+  let tasks = analyzer.analyze(command_args)?;
 
   let mut executor = Executor::new(tasks);
 

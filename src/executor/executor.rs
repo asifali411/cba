@@ -40,6 +40,7 @@ impl Executor {
   }
 
   fn run_command(&self, command: &str) -> EResult<()> {
+    println!("{:?}", command);
     Ok(())
   }
 }
