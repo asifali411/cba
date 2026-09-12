@@ -139,13 +139,21 @@ impl Parser {
     let task = match self.peek() {
       Some(tok) => match &tok.kind {
         TokenKind::Ident(t) => t.clone(),
-        _ => return Err(format!("expect a identifier\nat line: {}, col: {}", tok.span.line, tok.span.col))
+        _ => {
+          return Err(format!(
+            "expect a identifier\nat line: {}, col: {}",
+            tok.span.line, tok.span.col
+          ));
+        }
       },
-      None => return Err(String::from("unexpected end of file"))
+      None => return Err(String::from("unexpected end of file")),
     };
     self.advance();
 
-    self.consume(TokenKind::SemiColon, "expect semicolon after 'needs' statement")?;
+    self.consume(
+      TokenKind::SemiColon,
+      "expect semicolon after 'needs' statement",
+    )?;
 
     Ok(TaskStmt::Needs(task))
   }
@@ -155,13 +163,21 @@ impl Parser {
     let command = match self.peek() {
       Some(tok) => match &tok.kind {
         TokenKind::FString(s) => s.clone(),
-        _ => return Err(format!("expected a string\nat line: {}, col: {}", tok.span.line, tok.span.col))
+        _ => {
+          return Err(format!(
+            "expected a string\nat line: {}, col: {}",
+            tok.span.line, tok.span.col
+          ));
+        }
       },
-      None => return Err(String::from("unexpected end of file"))
+      None => return Err(String::from("unexpected end of file")),
     };
     self.advance();
 
-    self.consume(TokenKind::SemiColon, "expect semicolon after 'run' statement")?;
+    self.consume(
+      TokenKind::SemiColon,
+      "expect semicolon after 'run' statement",
+    )?;
     Ok(TaskStmt::Run(command))
   }
 
