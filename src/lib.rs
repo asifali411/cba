@@ -20,7 +20,22 @@ pub fn run(source: String) -> ExitCode {
   }
 }
 
+fn split_args() -> (Vec<String>, Vec<String>) {
+  let args: Vec<String> = std::env::args().skip(1).collect();
+
+  match args.iter().position(|arg| arg == "--") {
+    Some(pos) => {
+      let first = args[..pos].to_vec();
+      let second = args[pos + 1..].to_vec();
+      (first, second)
+    }
+    None => (args, Vec::new()),
+  }
+}
+
 fn try_run(source: String) -> Result<(), Box<dyn std::error::Error>> {
+  let (tool_args, command_args) = split_args();
+
   let mut lexer = Lexer::new(source);
   let tokens = lexer.tokenize()?;
 
@@ -31,6 +46,10 @@ fn try_run(source: String) -> Result<(), Box<dyn std::error::Error>> {
   let tasks = analyzer.analyze()?;
 
   let mut executor = Executor::new(tasks);
+
+  for task in tool_args {
+    executor.execute_task(&task)?;
+  }
 
   Ok(())
 }

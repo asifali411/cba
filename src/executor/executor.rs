@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::{analyzer::task_plan::TaskPlan, executor, primitives::result::EResult};
+use crate::{analyzer::task_plan::TaskPlan, primitives::result::EResult};
 
 pub struct Executor {
   tasks: HashMap<String, TaskPlan>,
