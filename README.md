@@ -147,7 +147,7 @@ task test {
   run "./{output} --test";
 }
 
-task run {
+task execute {
   needs build;
   run "./{output}";
 }

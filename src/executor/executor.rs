@@ -2,10 +2,17 @@
 use std::process::Command;
 use std::{
   collections::{HashMap, HashSet},
+  io::Error,
   process::ExitStatus,
 };
 
-use crate::{analyzer::task_plan::TaskPlan, primitives::result::EResult};
+use crate::{
+  analyzer::task_plan::TaskPlan,
+  primitives::{
+    result::EResult,
+    shell::{Shell, detect_shell},
+  },
+};
 
 pub struct Executor {
   tasks: HashMap<String, TaskPlan>,
@@ -53,16 +60,26 @@ impl Executor {
     Ok(())
   }
 
-  fn run_command(&self, command: &str) -> EResult<ExitStatus> {
-    #[cfg(target_os = "windows")]
-    let status = Command::new("cmd").args(["/C", command]).status();
+  fn run_command(&mut self, command: &str) -> EResult<ExitStatus> {
+    let shell = detect_shell();
+    let status: Result<ExitStatus, Error>;
 
-    #[cfg(not(target_os = "windows"))]
-    let status = Command::new("sh").args(["-c", command]).status();
+    match shell {
+      Shell::Sh => {
+        status = Command::new("sh").args(["-c", command]).status();
+      }
 
-    match status {
-      Err(e) => Err(e.to_string()),
-      Ok(e) => Ok(e),
-    }
+      Shell::PowerShell => {
+        status = Command::new("powershell")
+          .args(["-NoProfile", "-Command", command])
+          .status();
+      }
+
+      Shell::Cmd => {
+        status = Command::new("cmd").args(["/C", command]).status();
+      }
+    };
+
+    status.map_err(|e| e.to_string())
   }
 }
