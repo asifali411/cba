@@ -1,9 +1,6 @@
-use crate::{
-  lexer::{
-    lexer::Lexer,
-    tokens::{Token, TokenKind},
-  },
-  primitives::span::Span,
+use crate::lexer::{
+  lexer::Lexer,
+  tokens::{Token, TokenKind},
 };
 
 impl Lexer {
@@ -14,7 +11,7 @@ impl Lexer {
   pub(crate) fn advance(&mut self) -> char {
     let c = self.source[self.current];
     self.current += 1;
-    self.col += 1;
+    self.span.col += 1;
     c
   }
 
@@ -29,10 +26,7 @@ impl Lexer {
   pub(crate) fn add_token(&mut self, kind: TokenKind) {
     self.tokens.push(Token {
       kind,
-      span: Span {
-        line: self.line,
-        col: self.col,
-      },
+      span: self.span.clone(),
     });
   }
 }

@@ -6,6 +6,7 @@ use crate::{
 };
 
 mod analyzer;
+mod errors;
 mod executor;
 mod lexer;
 mod parser;
@@ -37,7 +38,13 @@ fn try_run(source: String) -> Result<(), Box<dyn std::error::Error>> {
   let (tool_args, command_args) = split_args();
 
   let mut lexer = Lexer::new(source);
-  let tokens = lexer.tokenize()?;
+  let tokens = match lexer.tokenize() {
+    Ok(toks) => toks,
+    Err(e) => {
+      e.display();
+      return Err("".into());
+    }
+  };
 
   let mut parser = Parser::new(tokens);
   let stmts = parser.parse()?;

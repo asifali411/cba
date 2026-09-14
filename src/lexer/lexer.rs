@@ -1,14 +1,14 @@
 use crate::{
+  errors::lex_error::LexError,
   lexer::tokens::{FStringPart, Token, TokenKind},
-  primitives::result::LResult,
+  primitives::{result::LResult, span::Span},
 };
 
 pub struct Lexer {
   pub(crate) source: Vec<char>,
   pub(crate) start: usize,
   pub(crate) current: usize,
-  pub(crate) line: usize,
-  pub(crate) col: usize,
+  pub(crate) span: Span,
   pub(crate) tokens: Vec<Token>,
 }
 
@@ -18,8 +18,7 @@ impl Lexer {
       source: source.chars().collect(),
       start: 0,
       current: 0,
-      line: 1,
-      col: 1,
+      span: Span { line: 1, col: 1 },
       tokens: Vec::new(),
     }
   }
@@ -39,8 +38,8 @@ impl Lexer {
     match c {
       ' ' | '\t' | '\r' => {}
       '\n' => {
-        self.line += 1;
-        self.col = 1;
+        self.span.line += 1;
+        self.span.col = 1;
       }
 
       ';' => self.add_token(TokenKind::SemiColon),
@@ -56,7 +55,12 @@ impl Lexer {
 
       c if c.is_ascii_alphabetic() => self.scan_identifier(),
 
-      _ => {}
+      other => {
+        return Err(LexError::UndefinedCharacter {
+          char: other,
+          span: self.span.clone(),
+        });
+      }
     }
 
     Ok(())
@@ -101,7 +105,10 @@ impl Lexer {
             '{' => '{',
             '}' => '}',
             other => {
-              return Err(format!("Invalid escape character '{}'", other));
+              return Err(LexError::InvalidEscapeCharacter {
+                char: other,
+                span: self.span.clone(),
+              });
             }
           };
 
@@ -117,13 +124,19 @@ impl Lexer {
           self.advance();
 
           if self.is_at_end() {
-            return Err("unterminated string expression".into());
+            return Err(LexError::UnterminatedString {
+              qoute: quote,
+              span: self.span.clone(),
+            });
           }
 
           let first = self.peek();
 
           if !first.is_ascii_alphabetic() && first != '_' {
-            return Err(format!("expected identifier after '{{', found '{}'", first));
+            return Err(LexError::ExpectedIdentifier {
+              found: first.to_string(),
+              span: self.span.clone(),
+            });
           }
 
           let mut ident = String::new();
@@ -140,7 +153,10 @@ impl Lexer {
           }
 
           if self.is_at_end() || self.peek() != '}' {
-            return Err(format!("expected '}}' after string expression '{}'", ident));
+            return Err(LexError::ExpectedCharacter {
+              message: format!("expected '}}' after string expression '{}'", ident),
+              span: self.span.clone(),
+            });
           }
 
           self.advance();
@@ -156,7 +172,10 @@ impl Lexer {
     }
 
     if self.is_at_end() {
-      return Err(format!("unterminated string, '{quote}' was never closed"));
+      return Err(LexError::UnterminatedString {
+        qoute: quote,
+        span: self.span.clone(),
+      });
     }
 
     self.advance();
