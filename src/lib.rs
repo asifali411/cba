@@ -47,7 +47,13 @@ fn try_run(source: String) -> Result<(), Box<dyn std::error::Error>> {
   };
 
   let mut parser = Parser::new(tokens);
-  let stmts = parser.parse()?;
+  let stmts = match parser.parse() {
+    Ok(stmts) => stmts,
+    Err(e) => {
+      e.display();
+      return Err("".into());
+    }
+  };
 
   let mut analyzer = Analyzer::new(&stmts);
   let tasks = analyzer.analyze(command_args)?;

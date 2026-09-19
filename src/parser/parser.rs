@@ -1,4 +1,5 @@
 use crate::{
+  errors::parse_error::ParseError,
   lexer::tokens::{Token, TokenKind},
   parser::stmt::{Stmt, TaskStmt},
   primitives::result::PResult,
@@ -28,12 +29,7 @@ impl Parser {
   }
 
   fn declaration(&mut self) -> PResult<Stmt> {
-    match self
-      .peek()
-      .cloned()
-      .ok_or(String::from("unexpected end of file"))?
-      .kind
-    {
+    match self.peek().cloned().ok_or(ParseError::UnexpectedEof)?.kind {
       TokenKind::Var => self.var_declaration(),
       TokenKind::Task => self.task_declaration(),
       _ => self.statement(),
@@ -47,13 +43,17 @@ impl Parser {
       Some(tok) => match &tok.kind {
         TokenKind::Ident(v) => v.clone(),
         _ => {
-          return Err(format!(
-            "expected variable name\nat line: {}, col: {}",
-            tok.span.line, tok.span.col
-          ));
+          return Err(ParseError::Expected {
+            message: format!(
+              "Expected variable name, but found '{}'{}",
+              tok.to_string(),
+              if tok.is_keyword() { " keyword" } else { "" }
+            ),
+            span: tok.span.clone(),
+          });
         }
       },
-      None => return Err(String::from("unexpected end of file")),
+      None => return Err(ParseError::UnexpectedEof),
     };
 
     self.advance();
@@ -62,9 +62,18 @@ impl Parser {
     let value = match self.peek() {
       Some(tok) => match &tok.kind {
         TokenKind::FString(s) => s.clone(),
-        _ => return Err(String::from("expect string as variable value")),
+        _ => {
+          return Err(ParseError::Expected {
+            message: format!(
+              "Expected string as variable value, but found '{}'{}",
+              tok.to_string(),
+              if tok.is_keyword() { " keyword" } else { "" }
+            ),
+            span: tok.span.clone(),
+          });
+        }
       },
-      None => return Err(String::from("expect variable value after '='")),
+      None => return Err(ParseError::UnexpectedEof),
     };
 
     self.advance();
@@ -83,13 +92,17 @@ impl Parser {
       Some(tok) => match &tok.kind {
         TokenKind::Ident(t) => t.clone(),
         _ => {
-          return Err(format!(
-            "expected task name\nat line: {}, col: {}",
-            tok.span.line, tok.span.col
-          ));
+          return Err(ParseError::Expected {
+            message: format!(
+              "Expected task name, but found '{}'{}",
+              tok.to_string(),
+              if tok.is_keyword() { " keyword" } else { "" }
+            ),
+            span: tok.span.clone(),
+          });
         }
       },
-      None => return Err(String::from("unexpect end of file")),
+      None => return Err(ParseError::UnexpectedEof),
     };
 
     self.advance();
@@ -99,12 +112,7 @@ impl Parser {
   }
 
   fn statement(&mut self) -> PResult<Stmt> {
-    match self
-      .peek()
-      .cloned()
-      .ok_or(String::from("unexpected end of file"))?
-      .kind
-    {
+    match self.peek().cloned().ok_or(ParseError::UnexpectedEof)?.kind {
       _ => self.expression(),
     }
   }
@@ -119,11 +127,14 @@ impl Parser {
           TokenKind::Needs => statements.push(self.need_statement()?),
           TokenKind::Run => statements.push(self.run_statement()?),
           _ => {
-            println!("{:?}", tok);
-            return Err(format!(
-              "expect statement\nat line: {}, col: {}",
-              tok.span.line, tok.span.col
-            ));
+            return Err(ParseError::Expected {
+              message: format!(
+                "Expected statement, but found '{}'{}",
+                tok.to_string(),
+                if tok.is_keyword() { " keyword" } else { "" }
+              ),
+              span: tok.span.clone(),
+            });
           }
         },
         _ => unreachable!("This is unreachable"),
@@ -140,13 +151,17 @@ impl Parser {
       Some(tok) => match &tok.kind {
         TokenKind::Ident(t) => t.clone(),
         _ => {
-          return Err(format!(
-            "expect a identifier\nat line: {}, col: {}",
-            tok.span.line, tok.span.col
-          ));
+          return Err(ParseError::Expected {
+            message: format!(
+              "Expected an identifier, but found '{}'{}",
+              tok.to_string(),
+              if tok.is_keyword() { " keyword" } else { "" }
+            ),
+            span: tok.span.clone(),
+          });
         }
       },
-      None => return Err(String::from("unexpected end of file")),
+      None => return Err(ParseError::UnexpectedEof),
     };
     self.advance();
 
@@ -164,13 +179,17 @@ impl Parser {
       Some(tok) => match &tok.kind {
         TokenKind::FString(s) => s.clone(),
         _ => {
-          return Err(format!(
-            "expected a string\nat line: {}, col: {}",
-            tok.span.line, tok.span.col
-          ));
+          return Err(ParseError::Expected {
+            message: format!(
+              "Expected string, but found '{}'{}",
+              tok.to_string(),
+              if tok.is_keyword() { " keyword" } else { "" }
+            ),
+            span: tok.span.clone(),
+          });
         }
       },
-      None => return Err(String::from("unexpected end of file")),
+      None => return Err(ParseError::UnexpectedEof),
     };
     self.advance();
 

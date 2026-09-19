@@ -1,4 +1,5 @@
 use crate::{
+  errors::parse_error::ParseError,
   lexer::tokens::{Token, TokenKind},
   parser::parser::Parser,
   primitives::result::PResult,
@@ -31,11 +32,11 @@ impl Parser {
         self.current += 1;
         Ok(())
       }
-      Some(tok) => Err(format!(
-        "{} at line: {}, col: {}",
-        message, tok.span.line, tok.span.col
-      )),
-      None => Err(String::from("unexpected end of file")),
+      Some(tok) => Err(ParseError::Expected {
+        message: message.into(),
+        span: tok.span.clone(),
+      }),
+      None => Err(ParseError::UnexpectedEof),
     }
   }
 

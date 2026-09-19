@@ -45,6 +45,6 @@ impl LexError {
     let detail = self.detail();
     let loc = format!(" at line: {line}, col: {col}");
 
-    eprintln!("{prefix}: {detail}\n{loc}\n");
+    eprintln!("{prefix}: {detail}\n{loc}");
   }
 }
