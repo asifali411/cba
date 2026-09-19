@@ -29,94 +29,75 @@ impl Parser {
   }
 
   fn declaration(&mut self) -> PResult<Stmt> {
-    match self.peek().cloned().ok_or(ParseError::UnexpectedEof)?.kind {
-      TokenKind::Var => self.var_declaration(),
-      TokenKind::Task => self.task_declaration(),
-      _ => self.statement(),
+    match self.peek() {
+      Some(tok) => match tok.kind {
+        TokenKind::Var => self.var_declaration(),
+        TokenKind::Task => self.task_declaration(),
+        _ => Err(ParseError::Expected {
+          message: format!("Expected 'var' or 'task', but found '{}'", tok.to_string(),),
+          span: tok.span.clone(),
+        }),
+      },
+      None => Err(ParseError::UnexpectedEof),
     }
   }
 
   fn var_declaration(&mut self) -> PResult<Stmt> {
     self.advance();
-    let name = self.expect_ident("Expected variable name")?;
 
-    self.consume(TokenKind::Equal, "expect '=' after variable name")?;
+    let name = self.expect_ident("Expected a variable name")?;
+    self.consume(TokenKind::Equal, "Expected '=' after the variable name")?;
 
-    let value = match self.peek() {
-      Some(tok) => match &tok.kind {
-        TokenKind::FString(s) => s.clone(),
-        _ => {
-          return Err(ParseError::Expected {
-            message: format!(
-              "Expected string as variable value, but found '{}'{}",
-              tok.to_string(),
-              if tok.is_keyword() { " keyword" } else { "" }
-            ),
-            span: tok.span.clone(),
-          });
-        }
-      },
-      None => return Err(ParseError::UnexpectedEof),
-    };
-
-    self.advance();
+    let value = self.expect_string("Expected a string as the variable value")?;
 
     self.consume(
       TokenKind::SemiColon,
-      "expect ';' after variable declaration",
+      "Expected ';' after the variable declaration",
     )?;
     Ok(Stmt::Var { name, value })
   }
 
   fn task_declaration(&mut self) -> PResult<Stmt> {
     self.advance();
-    let name = self.expect_ident("Expected task name")?;
+    let name = self.expect_ident("Expected a task name")?;
 
     let body = self.task_statement()?;
     Ok(Stmt::Task { name, body })
   }
 
-  fn statement(&mut self) -> PResult<Stmt> {
-    match self.peek().cloned().ok_or(ParseError::UnexpectedEof)?.kind {
-      _ => self.expression(),
-    }
-  }
-
   fn task_statement(&mut self) -> PResult<Vec<TaskStmt>> {
-    self.consume(TokenKind::LeftBrace, "Expect '{' before block")?;
+    self.consume(TokenKind::LeftBrace, "Expect '{' before the task body")?;
 
     let mut statements: Vec<TaskStmt> = Vec::new();
     while !self.is_empty() && !self.compare(TokenKind::RightBrace) {
-      match self.peek() {
-        Some(tok) => match tok.kind {
-          TokenKind::Needs => statements.push(self.need_statement()?),
-          TokenKind::Run => statements.push(self.run_statement()?),
-          _ => {
-            return Err(ParseError::Expected {
-              message: format!(
-                "Expected statement, but found '{}'{}",
-                tok.to_string(),
-                if tok.is_keyword() { " keyword" } else { "" }
-              ),
-              span: tok.span.clone(),
-            });
-          }
-        },
-        _ => unreachable!("This is unreachable"),
-      };
+      let tok = self.peek().ok_or(ParseError::UnexpectedEof)?;
+      match &tok.kind {
+        TokenKind::Needs => statements.push(self.need_statement()?),
+        TokenKind::Run => statements.push(self.run_statement()?),
+        _ => {
+          return Err(ParseError::Expected {
+            message: format!(
+              "Expected 'needs' or 'run', but found '{}'{}",
+              tok.to_string(),
+              if tok.is_keyword() { " keyword" } else { "" }
+            ),
+            span: tok.span.clone(),
+          });
+        }
+      }
     }
 
-    self.consume(TokenKind::RightBrace, "Expect '}' after block")?;
+    self.consume(TokenKind::RightBrace, "Expect '}' after the task body")?;
     Ok(statements)
   }
 
   fn need_statement(&mut self) -> PResult<TaskStmt> {
     self.advance();
-    let task = self.expect_ident("Expected task name")?;
+    let task = self.expect_ident("Expected task name after 'needs'")?;
 
     self.consume(
       TokenKind::SemiColon,
-      "expect semicolon after 'needs' statement",
+      "Expected ';' after the 'needs' statement",
     )?;
 
     Ok(TaskStmt::Needs(task))
@@ -124,20 +105,12 @@ impl Parser {
 
   fn run_statement(&mut self) -> PResult<TaskStmt> {
     self.advance();
-    let command = self.expect_string("Expected string")?;
+    let command = self.expect_string("Expected a string after 'run'")?;
 
     self.consume(
       TokenKind::SemiColon,
-      "expect semicolon after 'run' statement",
+      "Expected ';' after the 'run' statement",
     )?;
     Ok(TaskStmt::Run(command))
-  }
-
-  fn expression(&mut self) -> PResult<Stmt> {
-    self.advance();
-    Ok(Stmt::Task {
-      name: String::new(),
-      body: vec![],
-    })
   }
 }

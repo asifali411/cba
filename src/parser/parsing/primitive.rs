@@ -1,5 +1,8 @@
 use crate::{
-  errors::parse_error::ParseError, lexer::tokens::{FStringPart, Token, TokenKind}, parser::parser::Parser, primitives::result::PResult,
+  errors::parse_error::ParseError,
+  lexer::tokens::{FStringPart, Token, TokenKind},
+  parser::parser::Parser,
+  primitives::result::PResult,
 };
 
 impl Parser {
