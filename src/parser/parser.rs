@@ -38,25 +38,8 @@ impl Parser {
 
   fn var_declaration(&mut self) -> PResult<Stmt> {
     self.advance();
+    let name = self.expect_ident("Expected variable name")?;
 
-    let name = match self.peek() {
-      Some(tok) => match &tok.kind {
-        TokenKind::Ident(v) => v.clone(),
-        _ => {
-          return Err(ParseError::Expected {
-            message: format!(
-              "Expected variable name, but found '{}'{}",
-              tok.to_string(),
-              if tok.is_keyword() { " keyword" } else { "" }
-            ),
-            span: tok.span.clone(),
-          });
-        }
-      },
-      None => return Err(ParseError::UnexpectedEof),
-    };
-
-    self.advance();
     self.consume(TokenKind::Equal, "expect '=' after variable name")?;
 
     let value = match self.peek() {
@@ -87,25 +70,7 @@ impl Parser {
 
   fn task_declaration(&mut self) -> PResult<Stmt> {
     self.advance();
-
-    let name = match self.peek() {
-      Some(tok) => match &tok.kind {
-        TokenKind::Ident(t) => t.clone(),
-        _ => {
-          return Err(ParseError::Expected {
-            message: format!(
-              "Expected task name, but found '{}'{}",
-              tok.to_string(),
-              if tok.is_keyword() { " keyword" } else { "" }
-            ),
-            span: tok.span.clone(),
-          });
-        }
-      },
-      None => return Err(ParseError::UnexpectedEof),
-    };
-
-    self.advance();
+    let name = self.expect_ident("Expected task name")?;
 
     let body = self.task_statement()?;
     Ok(Stmt::Task { name, body })
@@ -147,23 +112,7 @@ impl Parser {
 
   fn need_statement(&mut self) -> PResult<TaskStmt> {
     self.advance();
-    let task = match self.peek() {
-      Some(tok) => match &tok.kind {
-        TokenKind::Ident(t) => t.clone(),
-        _ => {
-          return Err(ParseError::Expected {
-            message: format!(
-              "Expected an identifier, but found '{}'{}",
-              tok.to_string(),
-              if tok.is_keyword() { " keyword" } else { "" }
-            ),
-            span: tok.span.clone(),
-          });
-        }
-      },
-      None => return Err(ParseError::UnexpectedEof),
-    };
-    self.advance();
+    let task = self.expect_ident("Expected task name")?;
 
     self.consume(
       TokenKind::SemiColon,
@@ -175,23 +124,7 @@ impl Parser {
 
   fn run_statement(&mut self) -> PResult<TaskStmt> {
     self.advance();
-    let command = match self.peek() {
-      Some(tok) => match &tok.kind {
-        TokenKind::FString(s) => s.clone(),
-        _ => {
-          return Err(ParseError::Expected {
-            message: format!(
-              "Expected string, but found '{}'{}",
-              tok.to_string(),
-              if tok.is_keyword() { " keyword" } else { "" }
-            ),
-            span: tok.span.clone(),
-          });
-        }
-      },
-      None => return Err(ParseError::UnexpectedEof),
-    };
-    self.advance();
+    let command = self.expect_string("Expected string")?;
 
     self.consume(
       TokenKind::SemiColon,

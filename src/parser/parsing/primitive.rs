@@ -1,8 +1,5 @@
 use crate::{
-  errors::parse_error::ParseError,
-  lexer::tokens::{Token, TokenKind},
-  parser::parser::Parser,
-  primitives::result::PResult,
+  errors::parse_error::ParseError, lexer::tokens::{FStringPart, Token, TokenKind}, parser::parser::Parser, primitives::result::PResult,
 };
 
 impl Parser {
@@ -42,5 +39,47 @@ impl Parser {
 
   pub(crate) fn compare(&self, token_kind: TokenKind) -> bool {
     matches!(self.peek(), Some(tok) if tok.kind == token_kind)
+  }
+
+  pub(crate) fn expect_ident(&mut self, message: &str) -> PResult<String> {
+    let tok = self.peek().ok_or(ParseError::UnexpectedEof)?;
+
+    match &tok.kind {
+      TokenKind::Ident(value) => {
+        let value = value.clone();
+        self.advance();
+        Ok(value)
+      }
+      _ => Err(ParseError::Expected {
+        message: format!(
+          "{}, but found '{}'{}",
+          message,
+          tok.to_string(),
+          if tok.is_keyword() { " keyword" } else { "" }
+        ),
+        span: tok.span.clone(),
+      }),
+    }
+  }
+
+  pub(crate) fn expect_string(&mut self, message: &str) -> PResult<Vec<FStringPart>> {
+    let tok = self.peek().ok_or(ParseError::UnexpectedEof)?;
+
+    match &tok.kind {
+      TokenKind::FString(value) => {
+        let value = value.clone();
+        self.advance();
+        Ok(value)
+      }
+      _ => Err(ParseError::Expected {
+        message: format!(
+          "{}, but found '{}'{}",
+          message,
+          tok.to_string(),
+          if tok.is_keyword() { " keyword" } else { "" }
+        ),
+        span: tok.span.clone(),
+      }),
+    }
   }
 }
