@@ -12,11 +12,11 @@ pub enum LexError {
 impl LexError {
   fn location(&self) -> (usize, usize) {
     match self {
-      Self::UndefinedCharacter { span, .. } => (span.line, span.col),
-      Self::ExpectedCharacter { span, .. } => (span.line, span.col),
-      Self::InvalidEscapeCharacter { span, .. } => (span.line, span.col),
-      Self::UnterminatedString { span, .. } => (span.line, span.col),
-      Self::ExpectedIdentifier { span, .. } => (span.line, span.col),
+      Self::UndefinedCharacter { span, .. }
+      | Self::ExpectedCharacter { span, .. }
+      | Self::InvalidEscapeCharacter { span, .. }
+      | Self::UnterminatedString { span, .. }
+      | Self::ExpectedIdentifier { span, .. } => (span.line, span.col - 1),
     }
   }
 

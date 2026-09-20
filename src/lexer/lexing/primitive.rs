@@ -26,7 +26,7 @@ impl Lexer {
   pub(crate) fn add_token(&mut self, kind: TokenKind) {
     self.tokens.push(Token {
       kind,
-      span: self.span.clone(),
+      span: self.start_span.clone(),
     });
   }
 }

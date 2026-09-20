@@ -9,6 +9,7 @@ pub struct Lexer {
   pub(crate) start: usize,
   pub(crate) current: usize,
   pub(crate) span: Span,
+  pub(crate) start_span: Span,
   pub(crate) tokens: Vec<Token>,
 }
 
@@ -19,6 +20,7 @@ impl Lexer {
       start: 0,
       current: 0,
       span: Span { line: 1, col: 1 },
+      start_span: Span { line: 1, col: 1 },
       tokens: Vec::new(),
     }
   }
@@ -26,6 +28,7 @@ impl Lexer {
   pub fn tokenize(&mut self) -> LResult<&Vec<Token>> {
     while !self.is_at_end() {
       self.start = self.current;
+      self.start_span = self.span.clone();
       self.scan_token()?;
     }
     self.add_token(TokenKind::Eof);
