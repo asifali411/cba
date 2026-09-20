@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
   analyzer::task_plan::TaskPlan,
   lexer::tokens::FStringPart,
-  parser::stmt::{Stmt, TaskStmt},
+  parser::stmt::{Stmt, StmtKind, TaskStmt},
   primitives::{result::AResult, visit_state::VisitState},
 };
 
@@ -27,13 +27,13 @@ impl Analyzer {
     self.variables.insert("args".into(), args);
 
     for stmt in self.statements.clone() {
-      match stmt {
-        Stmt::Var { name, value } => {
+      match stmt.kind {
+        StmtKind::Var { name, value } => {
           let value = &self.resolve_fstring(value.to_vec())?;
           self.variables.insert(name.clone(), value.clone());
         }
 
-        Stmt::Task { name, body } => {
+        StmtKind::Task { name, body } => {
           self.resolve_task(&name, &body)?;
         }
       }

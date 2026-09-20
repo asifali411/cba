@@ -2,7 +2,7 @@ use crate::{
   errors::parse_error::ParseError,
   lexer::tokens::{FStringPart, Token, TokenKind},
   parser::parser::Parser,
-  primitives::result::PResult,
+  primitives::{range::Range, result::PResult},
 };
 
 impl Parser {
@@ -84,5 +84,16 @@ impl Parser {
         span: tok.span.clone(),
       }),
     }
+  }
+
+  pub(crate) fn with_range<T>(
+    &mut self,
+    f: impl FnOnce(&mut Self) -> PResult<T>,
+  ) -> PResult<(T, Range)> {
+    let start = self.current;
+    let value = f(self)?;
+    let end = self.current;
+
+    Ok((value, Range { start, end }))
   }
 }

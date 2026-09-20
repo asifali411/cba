@@ -1,7 +1,7 @@
 use crate::{
   errors::parse_error::ParseError,
   lexer::tokens::{Token, TokenKind},
-  parser::stmt::{Stmt, TaskStmt},
+  parser::stmt::{Stmt, StmtKind, TaskStmt},
   primitives::result::PResult,
 };
 
@@ -29,20 +29,22 @@ impl Parser {
   }
 
   fn declaration(&mut self) -> PResult<Stmt> {
-    match self.peek() {
+    let (kind, range) = self.with_range(|p| match p.peek() {
       Some(tok) => match tok.kind {
-        TokenKind::Var => self.var_declaration(),
-        TokenKind::Task => self.task_declaration(),
+        TokenKind::Var => p.var_declaration(),
+        TokenKind::Task => p.task_declaration(),
         _ => Err(ParseError::Expected {
           message: format!("Expected 'var' or 'task', but found '{}'", tok.to_string(),),
           span: tok.span.clone(),
         }),
       },
       None => Err(ParseError::UnexpectedEof),
-    }
+    })?;
+
+    Ok(Stmt { kind, range })
   }
 
-  fn var_declaration(&mut self) -> PResult<Stmt> {
+  fn var_declaration(&mut self) -> PResult<StmtKind> {
     self.advance();
 
     let name = self.expect_ident("Expected a variable name")?;
@@ -54,15 +56,15 @@ impl Parser {
       TokenKind::SemiColon,
       "Expected ';' after the variable declaration",
     )?;
-    Ok(Stmt::Var { name, value })
+    Ok(StmtKind::Var { name, value })
   }
 
-  fn task_declaration(&mut self) -> PResult<Stmt> {
+  fn task_declaration(&mut self) -> PResult<StmtKind> {
     self.advance();
     let name = self.expect_ident("Expected a task name")?;
 
     let body = self.task_statement()?;
-    Ok(Stmt::Task { name, body })
+    Ok(StmtKind::Task { name, body })
   }
 
   fn task_statement(&mut self) -> PResult<Vec<TaskStmt>> {
