@@ -6,10 +6,8 @@ use crate::{
 
 pub struct Lexer {
   pub(crate) source: Vec<char>,
-  pub(crate) start: usize,
-  pub(crate) current: usize,
-  pub(crate) span: Span,
-  pub(crate) start_span: Span,
+  pub(crate) current: Span,
+  pub(crate) start: Span,
   pub(crate) tokens: Vec<Token>,
 }
 
@@ -17,18 +15,15 @@ impl Lexer {
   pub fn new(source: &String) -> Self {
     Self {
       source: source.chars().collect(),
-      start: 0,
-      current: 0,
-      span: Span { line: 1, col: 1 },
-      start_span: Span { line: 1, col: 1 },
+      current: Span { line: 1, col: 1, pos: 0 },
+      start: Span { line: 1, col: 1, pos: 0 },
       tokens: Vec::new(),
     }
   }
 
   pub fn tokenize(&mut self) -> LResult<&Vec<Token>> {
     while !self.is_at_end() {
-      self.start = self.current;
-      self.start_span = self.span.clone();
+      self.start = self.current.clone();
       self.scan_token()?;
     }
     self.add_token(TokenKind::Eof);
@@ -41,8 +36,8 @@ impl Lexer {
     match c {
       ' ' | '\t' | '\r' => {}
       '\n' => {
-        self.span.line += 1;
-        self.span.col = 1;
+        self.current.line += 1;
+        self.current.col = 1;
       }
 
       ';' => self.add_token(TokenKind::SemiColon),
@@ -61,7 +56,7 @@ impl Lexer {
       other => {
         return Err(LexError::UndefinedCharacter {
           char: other,
-          span: self.span.clone(),
+          span: self.current.clone(),
         });
       }
     }
@@ -80,7 +75,7 @@ impl Lexer {
       self.advance();
     }
 
-    let lexeme: String = self.source[self.start..self.current].iter().collect();
+    let lexeme: String = self.source[self.start.pos..self.current.pos].iter().collect();
     let kind = Self::keyword(&lexeme).unwrap_or(TokenKind::Ident(lexeme));
     self.add_token(kind);
   }
@@ -110,7 +105,7 @@ impl Lexer {
             other => {
               return Err(LexError::InvalidEscapeCharacter {
                 char: other,
-                span: self.span.clone(),
+                span: self.current.clone(),
               });
             }
           };
@@ -129,7 +124,7 @@ impl Lexer {
           if self.is_at_end() {
             return Err(LexError::UnterminatedString {
               qoute: quote,
-              span: self.span.clone(),
+              span: self.current.clone(),
             });
           }
 
@@ -138,7 +133,7 @@ impl Lexer {
           if !first.is_ascii_alphabetic() && first != '_' {
             return Err(LexError::ExpectedIdentifier {
               found: first.to_string(),
-              span: self.span.clone(),
+              span: self.current.clone(),
             });
           }
 
@@ -158,7 +153,7 @@ impl Lexer {
           if self.is_at_end() || self.peek() != '}' {
             return Err(LexError::ExpectedCharacter {
               message: format!("expected '}}' after string expression '{}'", ident),
-              span: self.span.clone(),
+              span: self.current.clone(),
             });
           }
 
@@ -177,7 +172,7 @@ impl Lexer {
     if self.is_at_end() {
       return Err(LexError::UnterminatedString {
         qoute: quote,
-        span: self.span.clone(),
+        span: self.current.clone(),
       });
     }
 

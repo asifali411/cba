@@ -5,13 +5,13 @@ use crate::lexer::{
 
 impl Lexer {
   pub(crate) fn is_at_end(&self) -> bool {
-    self.current >= self.source.len()
+    self.current.pos >= self.source.len()
   }
 
   pub(crate) fn advance(&mut self) -> char {
-    let c = self.source[self.current];
-    self.current += 1;
-    self.span.col += 1;
+    let c = self.source[self.current.pos];
+    self.current.col += 1;
+    self.current.pos += 1;
     c
   }
 
@@ -19,14 +19,14 @@ impl Lexer {
     if self.is_at_end() {
       '\0'
     } else {
-      self.source[self.current]
+      self.source[self.current.pos]
     }
   }
 
   pub(crate) fn add_token(&mut self, kind: TokenKind) {
     self.tokens.push(Token {
       kind,
-      span: self.start_span.clone(),
+      span: self.start.clone(),
     });
   }
 }

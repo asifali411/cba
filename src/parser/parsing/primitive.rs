@@ -90,9 +90,9 @@ impl Parser {
     &mut self,
     f: impl FnOnce(&mut Self) -> PResult<T>,
   ) -> PResult<(T, Range)> {
-    let start = self.current;
+    let start = self.tokens[self.current].span.pos;
     let value = f(self)?;
-    let end = self.current;
+    let end = self.tokens[self.current].span.pos;
 
     Ok((value, Range { start, end }))
   }
