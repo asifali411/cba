@@ -37,7 +37,7 @@ fn split_args() -> (Vec<String>, Vec<String>) {
 fn try_run(source: String) -> Result<(), Box<dyn std::error::Error>> {
   let (tool_args, command_args) = split_args();
 
-  let mut lexer = Lexer::new(source);
+  let mut lexer = Lexer::new(&source);
   let tokens = match lexer.tokenize() {
     Ok(toks) => toks,
     Err(e) => {
@@ -56,7 +56,13 @@ fn try_run(source: String) -> Result<(), Box<dyn std::error::Error>> {
   };
 
   let mut analyzer = Analyzer::new(&stmts);
-  let tasks = analyzer.analyze(command_args)?;
+  let tasks = match analyzer.analyze(command_args) {
+    Ok(tasks) => tasks,
+    Err(e) => {
+      e.display(&source);
+      return Err("".into());
+    }
+  };
 
   let mut executor = Executor::new(tasks);
 

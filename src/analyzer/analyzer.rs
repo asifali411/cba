@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use crate::{
   analyzer::task_plan::TaskPlan,
+  errors::analyze_error::AnalyzeError,
   lexer::tokens::FStringPart,
   parser::stmt::{Stmt, StmtKind, TaskStmt},
-  primitives::{result::AResult, visit_state::VisitState},
+  primitives::{range::Range, result::AResult, visit_state::VisitState},
 };
 
 pub struct Analyzer {
@@ -29,12 +30,12 @@ impl Analyzer {
     for stmt in self.statements.clone() {
       match stmt.kind {
         StmtKind::Var { name, value } => {
-          let value = &self.resolve_fstring(value.to_vec())?;
+          let value = &self.resolve_fstring(value.to_vec(), stmt.range)?;
           self.variables.insert(name.clone(), value.clone());
         }
 
         StmtKind::Task { name, body } => {
-          self.resolve_task(&name, &body)?;
+          self.resolve_task(&name, &body, &stmt.range)?;
         }
       }
     }
@@ -44,28 +45,30 @@ impl Analyzer {
     Ok(&self.tasks)
   }
 
-  fn resolve_task(&mut self, name: &String, body: &Vec<TaskStmt>) -> AResult<()> {
-    let mut task = TaskPlan::new(name.clone());
+  fn resolve_task(&mut self, name: &String, body: &Vec<TaskStmt>, range: &Range) -> AResult<()> {
+    let mut task = TaskPlan::new(name.clone(), range.clone());
 
     if self.tasks.contains_key(name) {
-      return Err(format!(
-        "cannot redeclare task. task '{}' is declared multiple times",
-        name
-      ));
+      return Err(AnalyzeError::CannotRedeclareTask {
+        name: name.into(),
+        range: range.clone(),
+      });
     }
 
     for stmt in body {
       match stmt {
         TaskStmt::Needs(d) => {
           if d == name {
-            return Err(format!(
-              "a task cannot depend on itself. task '{}' depends on itself",
-              d
-            ));
+            return Err(AnalyzeError::TaskCannotDependOnItself {
+              name: d.into(),
+              range: range.clone(),
+            });
           }
           task.dependencies.push(d.into())
         }
-        TaskStmt::Run(c) => task.commands.push(self.resolve_fstring(c.to_vec())?),
+        TaskStmt::Run(c) => task
+          .commands
+          .push(self.resolve_fstring(c.to_vec(), range.clone())?),
       }
     }
 
@@ -73,7 +76,7 @@ impl Analyzer {
     Ok(())
   }
 
-  fn resolve_fstring(&mut self, fstring: Vec<FStringPart>) -> AResult<String> {
+  fn resolve_fstring(&mut self, fstring: Vec<FStringPart>, range: Range) -> AResult<String> {
     let mut value = String::new();
 
     for part in fstring {
@@ -81,7 +84,7 @@ impl Analyzer {
         FStringPart::Text(t) => value.push_str(&t),
         FStringPart::Ident(i) => match self.variables.get(&i) {
           Some(v) => value.push_str(v),
-          None => return Err(format!("Cannot find variable {}", i)),
+          None => return Err(AnalyzeError::CannotFindVariable { name: i, range }),
         },
       };
     }
@@ -115,10 +118,9 @@ impl Analyzer {
         let mut cycle = path[start..].to_vec();
         cycle.push(name.to_string());
 
-        return Err(format!(
-          "circular dependency detected: {}",
-          cycle.join(" -> ")
-        ));
+        return Err(AnalyzeError::CircularDependency {
+          dependency: cycle.join(" -> "),
+        });
       }
 
       Some(VisitState::Visited) => {
@@ -135,10 +137,11 @@ impl Analyzer {
 
     for dependency in &task.dependencies {
       if !self.tasks.contains_key(dependency) {
-        return Err(format!(
-          "task '{}' depends on unknown task '{}'",
-          name, dependency
-        ));
+        return Err(AnalyzeError::TaskDependsOnUnknownTask {
+          task: task.name.clone(),
+          dependency: dependency.into(),
+          range: task.range.clone(),
+        });
       }
 
       self.visit_task(dependency, states, path)?;
