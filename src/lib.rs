@@ -12,8 +12,8 @@ mod lexer;
 mod parser;
 mod primitives;
 
-pub fn run(source: String) -> ExitCode {
-  if let Err(err) = try_run(&source) {
+pub fn run(source: String, tool_args: Vec<String>, command_args: Vec<String>) -> ExitCode {
+  if let Err(err) = try_run(&source, tool_args, command_args) {
     err.display(&source);
     ExitCode::FAILURE
   } else {
@@ -21,22 +21,11 @@ pub fn run(source: String) -> ExitCode {
   }
 }
 
-fn split_args() -> (Vec<String>, Vec<String>) {
-  let args: Vec<String> = std::env::args().skip(1).collect();
-
-  match args.iter().position(|arg| arg == "--") {
-    Some(pos) => {
-      let first = args[..pos].to_vec();
-      let second = args[pos + 1..].to_vec();
-      (first, second)
-    }
-    None => (args, Vec::new()),
-  }
-}
-
-fn try_run(source: &String) -> Result<(), LangError> {
-  let (tool_args, command_args) = split_args();
-
+fn try_run(
+  source: &String,
+  tool_args: Vec<String>,
+  command_args: Vec<String>,
+) -> Result<(), LangError> {
   let mut lexer = Lexer::new(source);
   let tokens = lexer.tokenize()?;
 
