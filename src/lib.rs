@@ -1,8 +1,8 @@
 use std::process::ExitCode;
 
 use crate::{
-  analyzer::analyzer::Analyzer, executor::executor::Executor, lexer::lexer::Lexer,
-  parser::parser::Parser,
+  analyzer::analyzer::Analyzer, errors::lang_error::LangError, executor::executor::Executor,
+  lexer::lexer::Lexer, parser::parser::Parser,
 };
 
 mod analyzer;
@@ -13,8 +13,8 @@ mod parser;
 mod primitives;
 
 pub fn run(source: String) -> ExitCode {
-  if let Err(err) = try_run(source) {
-    eprintln!("{err}");
+  if let Err(err) = try_run(&source) {
+    err.display(&source);
     ExitCode::FAILURE
   } else {
     ExitCode::SUCCESS
@@ -34,35 +34,17 @@ fn split_args() -> (Vec<String>, Vec<String>) {
   }
 }
 
-fn try_run(source: String) -> Result<(), Box<dyn std::error::Error>> {
+fn try_run(source: &String) -> Result<(), LangError> {
   let (tool_args, command_args) = split_args();
 
-  let mut lexer = Lexer::new(&source);
-  let tokens = match lexer.tokenize() {
-    Ok(toks) => toks,
-    Err(e) => {
-      e.display();
-      return Err("".into());
-    }
-  };
+  let mut lexer = Lexer::new(source);
+  let tokens = lexer.tokenize()?;
 
   let mut parser = Parser::new(tokens);
-  let stmts = match parser.parse() {
-    Ok(stmts) => stmts,
-    Err(e) => {
-      e.display();
-      return Err("".into());
-    }
-  };
+  let stmts = parser.parse()?;
 
   let mut analyzer = Analyzer::new(&stmts);
-  let tasks = match analyzer.analyze(command_args) {
-    Ok(tasks) => tasks,
-    Err(e) => {
-      e.display(&source);
-      return Err("".into());
-    }
-  };
+  let tasks = analyzer.analyze(command_args)?;
 
   let mut executor = Executor::new(tasks);
 

@@ -15,8 +15,16 @@ impl Lexer {
   pub fn new(source: &String) -> Self {
     Self {
       source: source.chars().collect(),
-      current: Span { line: 1, col: 1, pos: 0 },
-      start: Span { line: 1, col: 1, pos: 0 },
+      current: Span {
+        line: 1,
+        col: 1,
+        pos: 0,
+      },
+      start: Span {
+        line: 1,
+        col: 1,
+        pos: 0,
+      },
       tokens: Vec::new(),
     }
   }
@@ -75,7 +83,9 @@ impl Lexer {
       self.advance();
     }
 
-    let lexeme: String = self.source[self.start.pos..self.current.pos].iter().collect();
+    let lexeme: String = self.source[self.start.pos..self.current.pos]
+      .iter()
+      .collect();
     let kind = Self::keyword(&lexeme).unwrap_or(TokenKind::Ident(lexeme));
     self.add_token(kind);
   }

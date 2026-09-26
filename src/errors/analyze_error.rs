@@ -1,6 +1,5 @@
-use colored::Colorize;
-
 use crate::primitives::range::Range;
+use colored::Colorize;
 
 pub enum AnalyzeError {
   CannotRedeclareTask {
@@ -41,7 +40,7 @@ impl AnalyzeError {
         )
       }
       Self::CannotFindVariable { name, .. } => {
-        format!("Cannot find variable {}", name)
+        format!("Cannot find variable '{}'", name)
       }
       Self::CircularDependency { dependency, .. } => {
         format!("Circular Dependency detected: {}", dependency)

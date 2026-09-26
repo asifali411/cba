@@ -8,6 +8,7 @@ use std::{
 
 use crate::{
   analyzer::task_plan::TaskPlan,
+  errors::execute_error::ExecuteError,
   primitives::{
     result::EResult,
     shell::{Shell, detect_shell},
@@ -35,7 +36,9 @@ impl Executor {
     let task = self
       .tasks
       .get(task_name)
-      .ok_or_else(|| format!("unknown task: {task_name}"))?
+      .ok_or_else(|| ExecuteError::UnknownTask {
+        name: task_name.into(),
+      })?
       .clone();
 
     for dependency in &task.dependencies {
@@ -51,10 +54,7 @@ impl Executor {
     self.executed.insert(task_name.to_string());
 
     if exit_code != 0 {
-      return Err(format!(
-        "process didn't exit successfully (exit code: {})",
-        exit_code
-      ));
+      return Err(ExecuteError::ProcessDidntExitSuccessfully { exit_code });
     }
 
     Ok(())
@@ -80,6 +80,8 @@ impl Executor {
       }
     };
 
-    status.map_err(|e| e.to_string())
+    status.map_err(|e| ExecuteError::ProcessError {
+      message: e.to_string(),
+    })
   }
 }
