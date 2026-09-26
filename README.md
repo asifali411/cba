@@ -102,21 +102,56 @@ will first execute `build`, then execute the test command.
 
 This allows you to create task pipelines without manually running every step.
 
+## Command-Line Usage
+
+```
+cba [OPTIONS] [TOOL_ARGS...] [-- COMMAND_ARGS...]
+```
+
+Everything before `--` that isn't consumed by an option below is forwarded as **tool args** (the tasks to run, in order). Everything after `--` is forwarded as **command args**, which become available to tasks through the `{args}` variable.
+
+### Options
+
+| Flag | Description |
+| --- | --- |
+| `-h`, `--help` | Print help information |
+| `-v`, `--version` | Print version information |
+| `-p`, `--path <PATH>` | Path to the `.cba` file (default: `./cba`) |
+
+### Running Tasks
+
+You can run one or more tasks by naming them as tool args:
+
+```
+cba build
+cba test
+cba clean
+cba build test
+```
+
+When multiple tasks are given, they are run in the order listed (subject to their `needs` dependencies).
+
+### Using a Custom Config Path
+
+By default, cba looks for a file named `.cba` in the current directory. Use `-p`/`--path` to point it at a different file:
+
+```
+cba -p "./test/proj/.cba" build test
+```
+
 ## Command Arguments
 
-Commands can use the special `{args}` variable to receive arguments passed to the task.
+Commands can use the special `{args}` variable to receive arguments passed after `--` on the command line.
 
 For example:
 
 ```
 task build {
-  run "{compiler} {flags} {args} src/main.c -o app";
+  run "{compiler} {flags} {args} src/main.c -o {output}";
 }
 ```
 
-This allows additional arguments to be passed from the command line.
-
-For example:
+This allows additional arguments to be passed from the command line:
 
 ```
 cba build -- -g
@@ -127,7 +162,14 @@ can result in a command similar to:
 ```
 gcc -Wall -O2 -g src/main.c -o app
 ```
-Note that arguments must be seperated by a "--".
+
+Note that command arguments must be separated from tasks/options using `--`.
+
+You can combine a custom path, multiple tasks, and command args in a single invocation:
+
+```
+cba -p "./test/proj/.cba" build test -- -Wall -Wextra
+```
 
 ## A More Complete Example
 
@@ -162,7 +204,7 @@ Then the development workflow becomes:
 ```
 cba build
 cba test
-cba run
+cba execute
 cba clean
 ```
 
@@ -213,6 +255,8 @@ For example:
 cba build
 cba test
 cba clean
+cba --help
+cba --version
 ```
 
 ## Design Goals
