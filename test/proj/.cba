@@ -1,0 +1,13 @@
+var compiler = "gcc";
+var flags = "-Wall -Wextra";
+var src = "./test/proj/main.c";
+var target = "./test/proj/main";
+
+task build {
+  run "{compiler} {flags} {src} -o {target}";
+}
+
+task test {
+  needs build;
+  run "{target}";
+}
