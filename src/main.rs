@@ -3,7 +3,7 @@ use std::{fs, process::ExitCode};
 use cba;
 use colored::Colorize;
 
-const DEFAULT_PATH: &str = "./cba";
+const DEFAULT_PATH: &str = "./cba.txt";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn print_help() {
@@ -16,7 +16,7 @@ fn print_help() {
 {}
     {}, {}              Print help information
     {}, {}           Print version information
-    {}, {} <PATH>       Path to the .cba file (default: {})
+    {}, {} <PATH>       Path to the cba.txt file (default: {})
 
 Everything before '--' that isn't consumed by an option above is
 forwarded as tool args. Everything after '--' is forwarded as
@@ -26,7 +26,7 @@ command args.
     cba --help
     cba test
     cba test -- -Wall -Wextra
-    cba -p \"./test/proj/.cba\" build test -- -Wall -Wextra
+    cba -p \"./test/proj/cba.txt\" build test -- -Wall -Wextra
 ",
     "cba".bold().cyan(),
     "USAGE:".bold().yellow(),

@@ -28,13 +28,13 @@ It is designed to keep build scripts small, readable, and easy to understand.
 Download and run the install script, which pulls the correct binary for your platform from the [latest release](https://github.com/asifali411/cba/releases/latest), verifies its checksum, and installs it to `/usr/local/bin` (or `~/.local/bin` if that isn't writable):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/asifali411/cba/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/asifali411/cba/main/scripts/install.sh | bash
 ```
 
 To install a specific version, download `install.sh` and run it with `-v`:
 
 ```sh
-curl -fsSL -o install.sh https://raw.githubusercontent.com/asifali411/cba/main/install.sh
+curl -fsSL -o install.sh https://raw.githubusercontent.com/asifali411/cba/main/scripts/install.sh
 chmod +x install.sh
 ./install.sh -v v1.2.3
 ```
@@ -44,13 +44,13 @@ chmod +x install.sh
 Run the install script in PowerShell, which downloads the Windows release, verifies its checksum, and installs it to `%LOCALAPPDATA%\cba\bin`:
 
 ```powershell
-irm https://raw.githubusercontent.com/asifali411/cba/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/asifali411/cba/main/scripts/install.ps1 | iex
 ```
 
 To install a specific version:
 
 ```powershell
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/asifali411/cba/main/install.ps1 -OutFile install.ps1
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/asifali411/cba/main/scripts/install.ps1 -OutFile install.ps1
 .\install.ps1 -Version v1.2.3
 ```
 
@@ -72,7 +72,7 @@ The compiled binary will be at `target/release/cba`.
 
 ## Example
 
-Create a `.cba` file in your project:
+Create a `cba` file in your project:
 
 ```
 var compiler = "gcc";
@@ -170,7 +170,7 @@ Everything before `--` that isn't consumed by an option below is forwarded as **
 | --- | --- |
 | `-h`, `--help` | Print help information |
 | `-v`, `--version` | Print version information |
-| `-p`, `--path <PATH>` | Path to the `.cba` file (default: `./cba`) |
+| `-p`, `--path <PATH>` | Path to the `cba.txt` file (default: `./cba.txt`) |
 
 ### Running Tasks
 
@@ -187,10 +187,10 @@ When multiple tasks are given, they are run in the order listed (subject to thei
 
 ### Using a Custom Config Path
 
-By default, cba looks for a file named `.cba` in the current directory. Use `-p`/`--path` to point it at a different file:
+By default, cba looks for a file named `cba.txt` in the current directory. Use `-p`/`--path` to point it at a different file:
 
 ```
-cba -p "./test/proj/.cba" build test
+cba -p "./test/proj/cba.txt" build test
 ```
 
 ## Command Arguments
@@ -222,7 +222,7 @@ Note that command arguments must be separated from tasks/options using `--`.
 You can combine a custom path, multiple tasks, and command args in a single invocation:
 
 ```
-cba -p "./test/proj/.cba" build test -- -Wall -Wextra
+cba -p "./test/proj/cba.txt" build test -- -Wall -Wextra
 ```
 
 ## A More Complete Example
@@ -287,13 +287,13 @@ A typical project might look like:
 
 ```
 my-project/
-├── .cba
+├── cba.txt
 ├── src/
 │   └── main.c
 └── README.md
 ```
 
-The `.cba` file describes how the project is built and tested.
+The `cba.txt` file describes how the project is built and tested.
 
 ## Commands
 
