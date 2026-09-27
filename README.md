@@ -170,7 +170,7 @@ Everything before `--` that isn't consumed by an option below is forwarded as **
 | --- | --- |
 | `-h`, `--help` | Print help information |
 | `-v`, `--version` | Print version information |
-| `-p`, `--path <PATH>` | Path to the `cba.txt` file (default: `./cba.txt`) |
+| `-p`, `--path <PATH>` | Path to the project root (default: `./`) |
 
 ### Running Tasks
 
@@ -187,10 +187,10 @@ When multiple tasks are given, they are run in the order listed (subject to thei
 
 ### Using a Custom Config Path
 
-By default, cba looks for a file named `cba.txt` in the current directory. Use `-p`/`--path` to point it at a different file:
+By default, cba looks for a file named `cba.txt` in the current directory. Use `-p`/`--path` to point it to a different directory:
 
 ```
-cba -p "./test/proj/cba.txt" build test
+cba -p "./test/proj" build test
 ```
 
 ## Command Arguments
@@ -222,7 +222,7 @@ Note that command arguments must be separated from tasks/options using `--`.
 You can combine a custom path, multiple tasks, and command args in a single invocation:
 
 ```
-cba -p "./test/proj/cba.txt" build test -- -Wall -Wextra
+cba -p "./test/proj" build test -- -Wall -Wextra
 ```
 
 ## A More Complete Example

@@ -1,9 +1,9 @@
-use std::{fs, process::ExitCode};
+use std::{path::Path, process::ExitCode};
 
 use cba;
 use colored::Colorize;
 
-const DEFAULT_PATH: &str = "./cba.txt";
+const DEFAULT_PATH: &str = "./";
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn print_help() {
@@ -16,7 +16,7 @@ fn print_help() {
 {}
     {}, {}              Print help information
     {}, {}           Print version information
-    {}, {} <PATH>       Path to the cba.txt file (default: {})
+    {}, {} <PATH>       Path to the project root (default: {})
 
 Everything before '--' that isn't consumed by an option above is
 forwarded as tool args. Everything after '--' is forwarded as
@@ -26,7 +26,7 @@ command args.
     cba --help
     cba test
     cba test -- -Wall -Wextra
-    cba -p \"./test/proj/cba.txt\" build test -- -Wall -Wextra
+    cba -p \"./test/proj\" build test -- -Wall -Wextra
 ",
     "cba".bold().cyan(),
     "USAGE:".bold().yellow(),
@@ -104,9 +104,19 @@ fn parse_pre_dash_args(args: Vec<String>) -> ParseOutcome {
   }
 
   ParseOutcome::Continue {
-    path: path.unwrap_or_else(|| DEFAULT_PATH.to_string()),
+    path: folder_path(&path.unwrap_or_else(|| DEFAULT_PATH.to_string())),
     tool_args,
   }
+}
+
+fn folder_path(path: &str) -> String {
+  let path = Path::new(path);
+  let dir = if path.is_file() {
+    path.parent().unwrap_or(path)
+  } else {
+    path
+  };
+  dir.to_string_lossy().into_owned()
 }
 
 fn main() -> ExitCode {
@@ -118,11 +128,5 @@ fn main() -> ExitCode {
     ParseOutcome::Exit(code) => return code,
   };
 
-  match fs::read_to_string(&path) {
-    Ok(source) => cba::run(source, tool_args, command_args),
-    Err(err) => {
-      eprintln!("{} {}", "error:".red().bold(), err);
-      ExitCode::FAILURE
-    }
-  }
+  cba::run(path, tool_args, command_args)
 }
