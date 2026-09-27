@@ -1,3 +1,10 @@
+//! # Parser
+//!
+//! Converts a flat stream of [`Token`]s (produced by the lexer) into an AST
+//! of [`Stmt`]s. The grammar recognized is a flat sequence of top-level
+//! declarations — `var` bindings and `task` blocks — where each task body
+//! is itself a sequence of `needs` and `run` statements.
+
 use crate::{
   errors::parse_error::ParseError,
   lexer::tokens::{Token, TokenKind},
@@ -18,6 +25,9 @@ impl Parser {
     }
   }
 
+  /// Parses the entire token stream into a list of top-level
+  /// [`Stmt`]s, repeatedly parsing declarations until the stream is
+  /// exhausted.
   pub fn parse(&mut self) -> PResult<Vec<Stmt>> {
     let mut statements: Vec<Stmt> = Vec::new();
 
@@ -28,6 +38,13 @@ impl Parser {
     Ok(statements)
   }
 
+  /// Parses a single top-level declaration — either a `var` binding
+  /// (see [`Parser::var_declaration`]) or a `task` block (see
+  /// [`Parser::task_declaration`]) — and wraps the resulting
+  /// [`StmtKind`] together with its source [`Range`] into a [`Stmt`].
+  /// Returns a [`ParseError::Expected`] if the current token is neither
+  /// `var` nor `task`, or [`ParseError::UnexpectedEof`] if the stream
+  /// is empty.
   fn declaration(&mut self) -> PResult<Stmt> {
     let (kind, range) = self.with_range(|p| match p.peek() {
       Some(tok) => match tok.kind {
@@ -44,6 +61,8 @@ impl Parser {
     Ok(Stmt { kind, range })
   }
 
+  /// Parses a `var` declaration of the form `var <ident> = <string>;`,
+  /// assuming the leading `var` keyword is the current token.
   fn var_declaration(&mut self) -> PResult<StmtKind> {
     self.advance();
 
@@ -59,6 +78,10 @@ impl Parser {
     Ok(StmtKind::Var { name, value })
   }
 
+  /// Parses a `task` declaration of the form `task <name> { ... }`,
+  /// assuming the leading `task` keyword is the current token. The
+  /// task name may be either an identifier or the `run` keyword used
+  /// as a name (matching the special-cased "run" task).
   fn task_declaration(&mut self) -> PResult<StmtKind> {
     self.advance();
     let name = match self.peek() {
@@ -76,6 +99,9 @@ impl Parser {
     Ok(StmtKind::Task { name, body })
   }
 
+  /// Parses a brace-delimited task body: `{ (needs|run statement)* }`.
+  /// Each statement inside must begin with `needs` or `run`; any other
+  /// token produces a [`ParseError::Expected`].
   fn task_statement(&mut self) -> PResult<Vec<TaskStmt>> {
     self.consume(TokenKind::LeftBrace, "Expect '{' before the task body")?;
 
@@ -102,6 +128,9 @@ impl Parser {
     Ok(statements)
   }
 
+  /// Parses a `needs <ident>;` statement, assuming the leading `needs`
+  /// keyword is the current token, producing a [`TaskStmt::Needs`]
+  /// naming the dependency task.
   fn need_statement(&mut self) -> PResult<TaskStmt> {
     self.advance();
     let task = self.expect_ident("Expected task name after 'needs'")?;
@@ -114,6 +143,9 @@ impl Parser {
     Ok(TaskStmt::Needs(task))
   }
 
+  /// Parses a `run <string>;` statement, assuming the leading `run`
+  /// keyword is the current token, producing a [`TaskStmt::Run`]
+  /// containing the command string.
   fn run_statement(&mut self) -> PResult<TaskStmt> {
     self.advance();
     let command = self.expect_string("Expected a string after 'run'")?;

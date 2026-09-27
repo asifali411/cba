@@ -1,3 +1,15 @@
+//! # Lexer
+//!
+//! Converts raw source code into a flat stream of [`Token`]s, which are then
+//! consumed by the parser to build an AST.
+//!
+//! The lexer works by repeatedly scanning characters from the source buffer,
+//! grouping them into lexemes (e.g. identifiers, keywords, punctuation), and
+//! emitting a corresponding [`Token`] with its [`Span`] (line/column) for
+//! error reporting.
+//!
+//! Scanning is fallible: unrecognized characters produce a [`LexError`].
+
 use crate::{
   errors::lex_error::LexError,
   lexer::tokens::{FStringPart, Token, TokenKind},
@@ -29,6 +41,8 @@ impl Lexer {
     }
   }
 
+  /// Scans the entire source and returns the resulting list of tokens,
+  /// terminated with an [`TokenKind::Eof`] token.
   pub fn tokenize(&mut self) -> LResult<&Vec<Token>> {
     while !self.is_at_end() {
       self.start = self.current.clone();
@@ -38,6 +52,10 @@ impl Lexer {
     Ok(&self.tokens)
   }
 
+  /// Scans a single token starting at `self.start`, consuming as many
+  /// characters as needed and pushing the resulting token (if any) via
+  /// [`Lexer::add_token`]. Whitespace and newlines are consumed but do not
+  /// produce tokens; newlines update line/column tracking instead.
   fn scan_token(&mut self) -> LResult<()> {
     let c = self.advance();
 
@@ -72,12 +90,17 @@ impl Lexer {
     Ok(())
   }
 
+  /// Skips comments by repeatedly skipping the next characters
+  /// until it encounters a newline character.
   fn skip_comment(&mut self) {
     while self.peek() != '\n' && !self.is_at_end() {
       self.advance();
     }
   }
 
+  /// Consumes characters while they form a valid identifier (alphanumeric),
+  /// then emits either a keyword token or a [`TokenKind::Ident`]
+  /// token depending on whether the lexeme matches a reserved keyword.
   fn scan_identifier(&mut self) {
     while self.peek().is_ascii_alphanumeric() {
       self.advance();
@@ -90,6 +113,16 @@ impl Lexer {
     self.add_token(kind);
   }
 
+  /// Scans a quoted f-string literal starting after the opening `quote`
+  /// character, producing a [`TokenKind::FString`] made up of interleaved
+  /// [`FStringPart::Text`] and [`FStringPart::Ident`] parts.
+  ///
+  /// Handles backslash escapes (`\n`, `\t`, `\r`, `\"`, `\'`, `\\`, `\{`,
+  /// `\}`) and `{ident}` interpolations, where `ident` must start with an
+  /// alphabetic character or underscore and continue with alphanumeric
+  /// characters or underscores. Returns a [`LexError`] if an escape is
+  /// invalid, an interpolation is malformed (missing identifier or closing
+  /// `}`), or the string is left unterminated before the closing quote.
   fn scan_fstring(&mut self, quote: char) -> LResult<()> {
     let mut parts = Vec::new();
     let mut text = String::new();
@@ -197,6 +230,8 @@ impl Lexer {
     Ok(())
   }
 
+  /// Maps a raw identifier string to a reserved keyword's [`TokenKind`],
+  /// or `None` if it isn't a keyword (i.e. it's a plain identifier).
   fn keyword(s: &str) -> Option<TokenKind> {
     match s {
       "var" => Some(TokenKind::Var),

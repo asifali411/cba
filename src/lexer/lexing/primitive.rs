@@ -4,10 +4,13 @@ use crate::lexer::{
 };
 
 impl Lexer {
+  /// Returns `true` once the cursor has passed the last character of the source
   pub(crate) fn is_at_end(&self) -> bool {
     self.current.pos >= self.source.len()
   }
 
+  /// Consumes and returns the current character, advancing the cursor and
+  /// column position by one.
   pub(crate) fn advance(&mut self) -> char {
     let c = self.source[self.current.pos];
     self.current.col += 1;
@@ -15,6 +18,8 @@ impl Lexer {
     c
   }
 
+  /// Returns the next character without consuming it, or `'\0'` if at the
+  /// end of the source.
   pub(crate) fn peek(&self) -> char {
     if self.is_at_end() {
       '\0'
@@ -23,6 +28,8 @@ impl Lexer {
     }
   }
 
+  /// Pushes a new token of the given kind, tagged with the lexer's start
+  /// [`Span`].
   pub(crate) fn add_token(&mut self, kind: TokenKind) {
     self.tokens.push(Token {
       kind,
