@@ -1,7 +1,8 @@
-![banner](./assets/banner.png)
+![Banner](./assets/banner.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Release: Latest](https://img.shields.io/badge/platforms-Windows%20|%20Linux%20|%20macOS-blue.svg)](https://github.com/asifali411/cba/releases/latest)
+[![Supported OS](https://img.shields.io/badge/platforms-Windows%20|%20Linux%20|%20macOS-blue.svg)](https://github.com/asifali411/cba/releases/latest)
+[![Build](https://github.com/asifali411/cba/actions/workflows/release.yml/badge.svg)](https://github.com/asifali411/cba/actions)
 
 # cba
 
