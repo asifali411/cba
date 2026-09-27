@@ -11,6 +11,7 @@ pub enum FStringPart {
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
   Equal,
+  And,
   LeftBrace,
   RightBrace,
   SemiColon,
@@ -35,6 +36,7 @@ impl Token {
   pub fn to_string(&self) -> String {
     let string = match &self.kind {
       TokenKind::Equal => "=",
+      TokenKind::And => "&",
       TokenKind::LeftBrace => "{",
       TokenKind::RightBrace => "}",
       TokenKind::SemiColon => ";",

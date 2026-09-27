@@ -133,14 +133,25 @@ impl Parser {
   /// naming the dependency task.
   fn need_statement(&mut self) -> PResult<TaskStmt> {
     self.advance();
-    let task = self.expect_ident("Expected task name after 'needs'")?;
+
+    let mut dependencies: Vec<String> = Vec::new();
+
+    if !self.compare(TokenKind::SemiColon) {
+      dependencies.push(self.expect_ident("Expected task name after 'needs'")?);
+
+      while self.compare(TokenKind::And) {
+        self.advance();
+
+        dependencies.push(self.expect_ident("Expected task name after '&'")?);
+      }
+    }
 
     self.consume(
       TokenKind::SemiColon,
       "Expected ';' after the 'needs' statement",
     )?;
 
-    Ok(TaskStmt::Needs(task))
+    Ok(TaskStmt::Needs(dependencies))
   }
 
   /// Parses a `run <string>;` statement, assuming the leading `run`

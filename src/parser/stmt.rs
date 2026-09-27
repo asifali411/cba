@@ -3,7 +3,7 @@ use crate::{lexer::tokens::FStringPart, primitives::range::Range};
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStmt {
   Run(Vec<FStringPart>),
-  Needs(String),
+  Needs(Vec<String>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -7,7 +7,7 @@ task build {
 }
 
 task test {
-  needs build;
+  needs clean & build;
   run "./{output} --test";
 }
 

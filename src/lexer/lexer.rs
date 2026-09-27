@@ -68,6 +68,7 @@ impl Lexer {
 
       ';' => self.add_token(TokenKind::SemiColon),
       '=' => self.add_token(TokenKind::Equal),
+      '&' => self.add_token(TokenKind::And),
 
       '{' => self.add_token(TokenKind::LeftBrace),
       '}' => self.add_token(TokenKind::RightBrace),

@@ -79,14 +79,16 @@ impl Analyzer {
 
     for stmt in body {
       match stmt {
-        TaskStmt::Needs(d) => {
-          if d == name {
-            return Err(AnalyzeError::TaskCannotDependOnItself {
-              name: d.into(),
-              range: range.clone(),
-            });
+        TaskStmt::Needs(dependencies) => {
+          for d in dependencies {
+            if d == name {
+              return Err(AnalyzeError::TaskCannotDependOnItself {
+                name: d.into(),
+                range: range.clone(),
+              });
+            }
+            task.dependencies.push(d.into())
           }
-          task.dependencies.push(d.into())
         }
         TaskStmt::Run(c) => task
           .commands
