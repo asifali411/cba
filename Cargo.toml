@@ -2,6 +2,8 @@
 name = "cba"
 version = "0.1.0"
 edition = "2024"
+description = "A lightweight build automation tool that lets you define build tasks, dependencies, variables, compiler flags, and shell commands in a simple configuration file."
+repository = "https://github.com/asifali411/cba"
 
 [dependencies]
 colored = "3.1.1"
