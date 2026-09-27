@@ -1,13 +1,21 @@
 var compiler = "gcc";
-var flags = "-Wall -Wextra";
-var src = "./test/proj/main.c";
-var target = "./test/proj/main";
+var flags = "-Wall -Wextra -O2";
+var output = "test/proj/main";
 
 task build {
-  run "{compiler} {flags} {src} -o {target}";
+  run "{compiler} {flags} ./test/proj/main.c -o {output}";
 }
 
 task test {
   needs build;
-  run "{target}";
+  run "./{output} --test";
+}
+
+task run {
+  needs build;
+  run "./{output}";
+}
+
+task clean {
+  run "rm -f {output}";
 }

@@ -61,7 +61,16 @@ impl Parser {
 
   fn task_declaration(&mut self) -> PResult<StmtKind> {
     self.advance();
-    let name = self.expect_ident("Expected a task name")?;
+    let name = match self.peek() {
+      Some(tok) => match tok.kind {
+        TokenKind::Run => {
+          self.advance();
+          "run".to_string()
+        }
+        _ => self.expect_ident("Expected a task name")?,
+      },
+      None => return Err(ParseError::UnexpectedEof),
+    };
 
     let body = self.task_statement()?;
     Ok(StmtKind::Task { name, body })
