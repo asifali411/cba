@@ -1,6 +1,10 @@
 ![banner](./assets/banner.png)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Release: Latest](https://img.shields.io/badge/platforms-Windows%20|%20Linux%20|%20macOS-blue.svg)](https://github.com/asifali411/cba/releases/latest)
+
 # cba
+
 
 **cba** is a lightweight build automation tool that lets you define build tasks, dependencies, variables, compiler flags, and shell commands in a simple configuration file.
 
@@ -15,6 +19,55 @@ It is designed to keep build scripts small, readable, and easy to understand.
 - Command-line argument support
 - Minimal syntax
 - Suitable for C/C++ and other projects that can be built from shell commands
+
+## Installation
+
+### Linux / macOS
+
+Download and run the install script, which pulls the correct binary for your platform from the [latest release](https://github.com/asifali411/cba/releases/latest), verifies its checksum, and installs it to `/usr/local/bin` (or `~/.local/bin` if that isn't writable):
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/asifali411/cba/main/install.sh | bash
+```
+
+To install a specific version, download `install.sh` and run it with `-v`:
+
+```sh
+curl -fsSL -o install.sh https://raw.githubusercontent.com/asifali411/cba/main/install.sh
+chmod +x install.sh
+./install.sh -v v1.2.3
+```
+
+### Windows
+
+Run the install script in PowerShell, which downloads the Windows release, verifies its checksum, and installs it to `%LOCALAPPDATA%\cba\bin`:
+
+```powershell
+irm https://raw.githubusercontent.com/asifali411/cba/main/install.ps1 | iex
+```
+
+To install a specific version:
+
+```powershell
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/asifali411/cba/main/install.ps1 -OutFile install.ps1
+.\install.ps1 -Version v1.2.3
+```
+
+### Manual Download
+
+Prebuilt binaries for Linux (x86_64/aarch64), macOS (x86_64/aarch64), and Windows (x86_64) are attached to each [GitHub Release](https://github.com/asifali411/cba/releases), along with `.sha256` checksum files. Download the archive for your platform, verify the checksum, extract it, and place the `cba` binary somewhere on your `PATH`.
+
+### Build from Source
+
+With the [Rust toolchain](https://rustup.rs/) installed:
+
+```sh
+git clone https://github.com/asifali411/cba.git
+cd cba
+cargo build --release
+```
+
+The compiled binary will be at `target/release/cba`.
 
 ## Example
 
