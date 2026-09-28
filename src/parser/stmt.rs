@@ -1,4 +1,4 @@
-use crate::{lexer::tokens::FStringPart, primitives::range::Range};
+use crate::{lexer::tokens::FStringPart, parser::expr::Expr, primitives::range::Range};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TaskStmt {
@@ -8,15 +8,11 @@ pub enum TaskStmt {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum StmtKind {
-  Var {
-    name: String,
-    value: Vec<FStringPart>,
-  },
+  Var { name: String, expr: Expr },
 
-  Task {
-    name: String,
-    body: Vec<TaskStmt>,
-  },
+  Task { name: String, body: Vec<TaskStmt> },
+
+  Expr(Expr),
 }
 
 #[derive(Debug, Clone, PartialEq)]

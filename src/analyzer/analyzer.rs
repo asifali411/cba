@@ -11,20 +11,26 @@ use crate::{
   analyzer::task_plan::TaskPlan,
   errors::analyze_error::AnalyzeError,
   lexer::tokens::FStringPart,
-  parser::stmt::{Stmt, StmtKind, TaskStmt},
+  parser::{
+    expr::{Expr, ExprKind},
+    stmt::{Stmt, StmtKind, TaskStmt},
+  },
   primitives::{range::Range, result::AResult, visit_state::VisitState},
+  util::files::find_files,
 };
 
 pub struct Analyzer {
   statements: Vec<Stmt>,
+  pub root: String,
   pub variables: HashMap<String, String>,
   pub tasks: HashMap<String, TaskPlan>,
 }
 
 impl Analyzer {
-  pub fn new(statements: &[Stmt]) -> Self {
+  pub fn new(statements: &[Stmt], root: String) -> Self {
     Self {
       statements: statements.to_vec(),
+      root,
       variables: HashMap::new(),
       tasks: HashMap::new(),
     }
@@ -44,13 +50,19 @@ impl Analyzer {
 
     for stmt in self.statements.clone() {
       match stmt.kind {
-        StmtKind::Var { name, value } => {
-          let value = &self.resolve_fstring(value.to_vec(), stmt.range)?;
+        StmtKind::Var { name, expr } => {
+          let value = &self.resolve_expr(expr, stmt.range.clone())?;
           self.variables.insert(name.clone(), value.clone());
         }
 
         StmtKind::Task { name, body } => {
           self.resolve_task(&name, &body, &stmt.range)?;
+        }
+
+        StmtKind::Expr(expr) => {
+          return Err(AnalyzeError::UnexpectedExpression {
+            range: expr.range.clone(),
+          });
         }
       }
     }
@@ -90,9 +102,9 @@ impl Analyzer {
             task.dependencies.push(d.into())
           }
         }
-        TaskStmt::Run(c) => task
+        TaskStmt::Run(command) => task
           .commands
-          .push(self.resolve_fstring(c.to_vec(), range.clone())?),
+          .push(self.resolve_fstring(command, range.clone())?),
       }
     }
 
@@ -106,20 +118,44 @@ impl Analyzer {
   /// [`AnalyzeError::CannotFindVariable`] if an interpolated identifier
   /// hasn't been defined yet (i.e. `var` declarations must precede their
   /// use).
-  fn resolve_fstring(&mut self, fstring: Vec<FStringPart>, range: Range) -> AResult<String> {
+  fn resolve_fstring(&mut self, fstring: &Vec<FStringPart>, range: Range) -> AResult<String> {
     let mut value = String::new();
 
     for part in fstring {
       match part {
         FStringPart::Text(t) => value.push_str(&t),
-        FStringPart::Ident(i) => match self.variables.get(&i) {
+        FStringPart::Ident(i) => match self.variables.get(i) {
           Some(v) => value.push_str(v),
-          None => return Err(AnalyzeError::CannotFindVariable { name: i, range }),
+          None => {
+            return Err(AnalyzeError::CannotFindVariable {
+              name: i.to_string(),
+              range,
+            });
+          }
         },
       };
     }
 
     Ok(value)
+  }
+
+  fn resolve_expr(&mut self, expr: Expr, range: Range) -> AResult<String> {
+    let value = match &expr.kind {
+      ExprKind::MatchExpr(pattern) => self.resolve_match_pattern(pattern, range)?.join(" "),
+      ExprKind::FStringExpr(fstring) => self.resolve_fstring(fstring, range)?,
+    };
+
+    Ok(value)
+  }
+
+  fn resolve_match_pattern(
+    &mut self,
+    pattern: &Vec<FStringPart>,
+    range: Range,
+  ) -> AResult<Vec<String>> {
+    let pattern = self.resolve_fstring(pattern, range)?;
+    let files = find_files(&self.root, &pattern);
+    Ok(files)
   }
 
   /// Validates that the task dependency graph contains no cycles, by

@@ -8,7 +8,10 @@
 use crate::{
   errors::parse_error::ParseError,
   lexer::tokens::{Token, TokenKind},
-  parser::stmt::{Stmt, StmtKind, TaskStmt},
+  parser::{
+    expr::{Expr, ExprKind},
+    stmt::{Stmt, StmtKind, TaskStmt},
+  },
   primitives::result::PResult,
 };
 
@@ -50,10 +53,7 @@ impl Parser {
       Some(tok) => match tok.kind {
         TokenKind::Var => p.var_declaration(),
         TokenKind::Task => p.task_declaration(),
-        _ => Err(ParseError::Expected {
-          message: format!("Expected 'var' or 'task', but found '{}'", tok.to_string(),),
-          span: tok.span.clone(),
-        }),
+        _ => p.statement(),
       },
       None => Err(ParseError::UnexpectedEof),
     })?;
@@ -69,13 +69,13 @@ impl Parser {
     let name = self.expect_ident("Expected a variable name")?;
     self.consume(TokenKind::Equal, "Expected '=' after the variable name")?;
 
-    let value = self.expect_string("Expected a string as the variable value")?;
+    let expr = self.expression()?;
 
     self.consume(
       TokenKind::SemiColon,
       "Expected ';' after the variable declaration",
     )?;
-    Ok(StmtKind::Var { name, value })
+    Ok(StmtKind::Var { name, expr })
   }
 
   /// Parses a `task` declaration of the form `task <name> { ... }`,
@@ -97,6 +97,16 @@ impl Parser {
 
     let body = self.task_statement()?;
     Ok(StmtKind::Task { name, body })
+  }
+
+  fn statement(&mut self) -> PResult<StmtKind> {
+    Ok(self.expression_statement()?)
+  }
+
+  fn expression_statement(&mut self) -> PResult<StmtKind> {
+    let expr = self.expression()?;
+    self.consume(TokenKind::SemiColon, "Expect ';' after an expression")?;
+    Ok(StmtKind::Expr(expr))
   }
 
   /// Parses a brace-delimited task body: `{ (needs|run statement)* }`.
@@ -166,5 +176,24 @@ impl Parser {
       "Expected ';' after the 'run' statement",
     )?;
     Ok(TaskStmt::Run(command))
+  }
+
+  fn expression(&mut self) -> PResult<Expr> {
+    let (kind, range) = self.with_range(|p| p.primary())?;
+
+    Ok(Expr { kind, range })
+  }
+
+  fn primary(&mut self) -> PResult<ExprKind> {
+    let tok = self.advance().ok_or(ParseError::UnexpectedEof)?.clone();
+
+    match &tok.kind {
+      TokenKind::FString(fstring) => Ok(ExprKind::FStringExpr(fstring.to_vec())),
+      TokenKind::Match => {
+        let pattern = self.expect_string("Expect string as pattern")?;
+        Ok(ExprKind::MatchExpr(pattern))
+      }
+      _ => self.expected_but_found(&tok, "Expected a string"),
+    }
   }
 }

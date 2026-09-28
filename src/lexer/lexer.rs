@@ -239,6 +239,7 @@ impl Lexer {
       "run" => Some(TokenKind::Run),
       "task" => Some(TokenKind::Task),
       "needs" => Some(TokenKind::Needs),
+      "match" => Some(TokenKind::Match),
       _ => None,
     }
   }

@@ -18,6 +18,7 @@ pub enum TokenKind {
 
   Var,
   Task,
+  Match,
   Run,
   Needs,
   Ident(String),
@@ -42,6 +43,7 @@ impl Token {
       TokenKind::SemiColon => ";",
       TokenKind::Var => "var",
       TokenKind::Task => "task",
+      TokenKind::Match => "match",
       TokenKind::Run => "run",
       TokenKind::Needs => "needs",
       TokenKind::Ident(n) => n,

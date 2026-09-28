@@ -12,6 +12,7 @@ mod executor;
 mod lexer;
 mod parser;
 mod primitives;
+mod util;
 
 pub fn run(root: String, tool_args: Vec<String>, command_args: Vec<String>) -> ExitCode {
   let mut path = PathBuf::from(&root);
@@ -50,7 +51,7 @@ pub fn run(root: String, tool_args: Vec<String>, command_args: Vec<String>) -> E
     }
   };
 
-  if let Err(err) = try_run(&source, tool_args, command_args) {
+  if let Err(err) = try_run(root, &source, tool_args, command_args) {
     err.display(&source);
     ExitCode::FAILURE
   } else {
@@ -59,6 +60,7 @@ pub fn run(root: String, tool_args: Vec<String>, command_args: Vec<String>) -> E
 }
 
 fn try_run(
+  root: String,
   source: &String,
   tool_args: Vec<String>,
   command_args: Vec<String>,
@@ -69,7 +71,7 @@ fn try_run(
   let mut parser = Parser::new(tokens);
   let stmts = parser.parse()?;
 
-  let mut analyzer = Analyzer::new(&stmts);
+  let mut analyzer = Analyzer::new(&stmts, root);
   let tasks = analyzer.analyze(command_args)?;
 
   let mut executor = Executor::new(tasks);

@@ -1,9 +1,10 @@
 var compiler = "gcc";
 var flags = "-Wall -Wextra -O2";
 var output = "test/proj/main";
+var srcs = match "*.c";
 
 task build {
-  run "{compiler} {flags} ./test/proj/main.c -o {output}";
+  run "{compiler} {flags} {srcs} -o {output}";
 }
 
 task test {

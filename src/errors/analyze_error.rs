@@ -22,6 +22,9 @@ pub enum AnalyzeError {
     dependency: String,
     range: Range,
   },
+  UnexpectedExpression {
+    range: Range,
+  },
 }
 
 impl AnalyzeError {
@@ -50,6 +53,7 @@ impl AnalyzeError {
       } => {
         format!("Task '{}' depends on unknown task '{}'", task, dependency)
       }
+      Self::UnexpectedExpression { .. } => "Expected statement but found an expression".into(),
     }
   }
 
@@ -58,6 +62,7 @@ impl AnalyzeError {
       Self::CannotRedeclareTask { range, .. }
       | Self::TaskCannotDependOnItself { range, .. }
       | Self::CannotFindVariable { range, .. }
+      | Self::UnexpectedExpression { range, .. }
       | Self::TaskDependsOnUnknownTask { range, .. } => &source[range.start..range.end],
 
       _ => return None,
