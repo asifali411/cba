@@ -62,55 +62,118 @@ fn collect_direct(root: &Path, base: &Path, pattern: &str, result: &mut Vec<Stri
     }
   }
 }
-
 fn glob_match(pattern: &str, path: &str) -> bool {
-  let pattern: Vec<char> = pattern.chars().collect();
-  let path: Vec<char> = path.chars().collect();
+  let pattern = pattern.as_bytes();
+  let path = path.as_bytes();
 
-  fn match_recursive(pattern: &[char], path: &[char], pi: usize, si: usize) -> bool {
+  fn matches(pattern: &[u8], path: &[u8], pi: usize, si: usize) -> bool {
     if pi == pattern.len() {
       return si == path.len();
     }
 
-    if pattern[pi] == '*' && pi + 1 < pattern.len() && pattern[pi + 1] == '*' {
-      let mut next = pi + 2;
-      while next + 1 < pattern.len() && pattern[next] == '*' && pattern[next + 1] == '*' {
-        next += 2;
+    if pattern[pi] == b'*' && pi + 1 < pattern.len() && pattern[pi + 1] == b'*' {
+      let mut p = pi + 2;
+      while p + 1 < pattern.len() && pattern[p] == b'*' && pattern[p + 1] == b'*' {
+        p += 2;
       }
 
-      if match_recursive(pattern, path, next, si) {
+      if p < pattern.len() && pattern[p] == b'/' {
+        if matches(pattern, path, p + 1, si) {
+          return true;
+        }
+      } else if matches(pattern, path, p, si) {
         return true;
       }
 
-      if si < path.len() && match_recursive(pattern, path, pi, si + 1) {
-        return true;
-      }
-
-      return false;
-    }
-
-    if pattern[pi] == '*' {
-      if match_recursive(pattern, path, pi + 1, si) {
-        return true;
-      }
-
-      if si < path.len() && path[si] != '/' && match_recursive(pattern, path, pi, si + 1) {
+      if si < path.len() && matches(pattern, path, pi, si + 1) {
         return true;
       }
 
       return false;
     }
 
-    if pattern[pi] == '?' {
-      return si < path.len() && path[si] != '/' && match_recursive(pattern, path, pi + 1, si + 1);
+    if pattern[pi] == b'*' {
+      if matches(pattern, path, pi + 1, si) {
+        return true;
+      }
+
+      if si < path.len() && path[si] != b'/' && matches(pattern, path, pi, si + 1) {
+        return true;
+      }
+
+      return false;
+    }
+
+    if pattern[pi] == b'?' {
+      return si < path.len() && path[si] != b'/' && matches(pattern, path, pi + 1, si + 1);
+    }
+
+    if pattern[pi] == b'[' {
+      if let Some((matched, next)) = match_class(pattern, path, pi, si) {
+        if matched {
+          return matches(pattern, path, next, si + 1);
+        }
+
+        return false;
+      }
     }
 
     if si < path.len() && pattern[pi] == path[si] {
-      return match_recursive(pattern, path, pi + 1, si + 1);
+      return matches(pattern, path, pi + 1, si + 1);
     }
 
     false
   }
 
-  match_recursive(&pattern, &path, 0, 0)
+  fn match_class(pattern: &[u8], path: &[u8], pi: usize, si: usize) -> Option<(bool, usize)> {
+    if si >= path.len() || path[si] == b'/' {
+      return Some((false, pi));
+    }
+
+    let mut p = pi + 1;
+
+    if p >= pattern.len() {
+      return None;
+    }
+
+    let negated = match pattern[p] {
+      b'!' | b'^' => {
+        p += 1;
+        true
+      }
+      _ => false,
+    };
+
+    let mut matched = false;
+    let mut has_content = false;
+
+    while p < pattern.len() && pattern[p] != b']' {
+      has_content = true;
+
+      if p + 2 < pattern.len() && pattern[p + 1] == b'-' && pattern[p + 2] != b']' {
+        let start = pattern[p];
+        let end = pattern[p + 2];
+
+        if start <= path[si] && path[si] <= end {
+          matched = true;
+        }
+
+        p += 3;
+      } else {
+        if pattern[p] == path[si] {
+          matched = true;
+        }
+
+        p += 1;
+      }
+    }
+
+    if p >= pattern.len() || !has_content {
+      return None;
+    }
+
+    Some(((if negated { !matched } else { matched }), p + 1))
+  }
+
+  matches(pattern, path, 0, 0)
 }
