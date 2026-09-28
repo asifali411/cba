@@ -15,6 +15,7 @@ impl Lexer {
     let c = self.source[self.current.pos];
     self.current.col += 1;
     self.current.pos += 1;
+    self.start.len += 1;
     c
   }
 

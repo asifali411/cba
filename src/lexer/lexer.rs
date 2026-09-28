@@ -31,11 +31,13 @@ impl Lexer {
         line: 1,
         col: 1,
         pos: 0,
+        len: 0,
       },
       start: Span {
         line: 1,
         col: 1,
         pos: 0,
+        len: 0,
       },
       tokens: Vec::new(),
     }

@@ -118,11 +118,22 @@ impl Parser {
     &mut self,
     f: impl FnOnce(&mut Self) -> PResult<T>,
   ) -> PResult<(T, Range)> {
-    let start = self.tokens[self.current].span.pos;
+    let start_idx = self.current;
+    let start = self
+      .tokens
+      .get(start_idx)
+      .ok_or(ParseError::UnexpectedEof)?
+      .span
+      .pos;
+
     let value = f(self)?;
-    // TODO: we are considering the 'end' to be the position of the next unconsumed token.
-    // instead we need to take the end position of the last consumed token.
-    let end = self.tokens[self.current].span.pos;
+
+    let end = if self.current > start_idx {
+      let last = &self.tokens[self.current - 1];
+      last.span.pos + last.span.len
+    } else {
+      start
+    };
 
     Ok((value, Range { start, end }))
   }

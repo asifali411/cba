@@ -156,7 +156,12 @@ impl Parser {
     let mut dependencies: Vec<String> = Vec::new();
 
     if !self.compare(TokenKind::SemiColon) {
-      dependencies.push(self.expect_ident("Expected task name after 'needs'")?);
+      if self.compare(TokenKind::Run) {
+        dependencies.push("run".into());
+        self.advance();
+      } else {
+        dependencies.push(self.expect_ident("Expected task name after 'needs'")?);
+      }
 
       while self.compare(TokenKind::And) {
         self.advance();
