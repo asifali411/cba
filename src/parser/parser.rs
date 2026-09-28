@@ -41,13 +41,14 @@ impl Parser {
     Ok(statements)
   }
 
-  /// Parses a single top-level declaration — either a `var` binding
-  /// (see [`Parser::var_declaration`]) or a `task` block (see
-  /// [`Parser::task_declaration`]) — and wraps the resulting
-  /// [`StmtKind`] together with its source [`Range`] into a [`Stmt`].
-  /// Returns a [`ParseError::Expected`] if the current token is neither
-  /// `var` nor `task`, or [`ParseError::UnexpectedEof`] if the stream
-  /// is empty.
+  /// Parses a single top-level declaration — a `var` binding (see
+  /// [`Parser::var_declaration`]), a `task` block (see
+  /// [`Parser::task_declaration`]), or, for any other leading token, a
+  /// bare statement (see [`Parser::statement`]) — and wraps the
+  /// resulting [`StmtKind`] together with its source [`Range`] into a
+  /// [`Stmt`]. Returns [`ParseError::UnexpectedEof`] if the stream is
+  /// empty; other errors are propagated from the sub-parser that was
+  /// dispatched to.
   fn declaration(&mut self) -> PResult<Stmt> {
     let (kind, range) = self.with_range(|p| match p.peek() {
       Some(tok) => match tok.kind {
@@ -61,8 +62,9 @@ impl Parser {
     Ok(Stmt { kind, range })
   }
 
-  /// Parses a `var` declaration of the form `var <ident> = <string>;`,
-  /// assuming the leading `var` keyword is the current token.
+  /// Parses a `var` declaration of the form `var <ident> = <expr>;`,
+  /// assuming the leading `var` keyword is the current token. The
+  /// right-hand side is parsed with [`Parser::expression`].
   fn var_declaration(&mut self) -> PResult<StmtKind> {
     self.advance();
 
@@ -99,10 +101,16 @@ impl Parser {
     Ok(StmtKind::Task { name, body })
   }
 
+  /// Parses a top-level statement that isn't a `var` or `task`
+  /// declaration. Currently the only such form is an expression
+  /// statement (see [`Parser::expression_statement`]).
   fn statement(&mut self) -> PResult<StmtKind> {
     Ok(self.expression_statement()?)
   }
 
+  /// Parses an expression followed by a terminating `;`, producing a
+  /// [`StmtKind::Expr`]. Returns a [`ParseError`] if the expression is
+  /// malformed or the semicolon is missing.
   fn expression_statement(&mut self) -> PResult<StmtKind> {
     let expr = self.expression()?;
     self.consume(TokenKind::SemiColon, "Expect ';' after an expression")?;
@@ -138,9 +146,10 @@ impl Parser {
     Ok(statements)
   }
 
-  /// Parses a `needs <ident>;` statement, assuming the leading `needs`
-  /// keyword is the current token, producing a [`TaskStmt::Needs`]
-  /// naming the dependency task.
+  /// Parses a `needs` statement of the form `needs <ident> (& <ident>)*;`,
+  /// assuming the leading `needs` keyword is the current token. Produces
+  /// a [`TaskStmt::Needs`] listing every dependency task in order. An
+  /// empty list (`needs;`) is accepted and yields no dependencies.
   fn need_statement(&mut self) -> PResult<TaskStmt> {
     self.advance();
 
@@ -178,12 +187,24 @@ impl Parser {
     Ok(TaskStmt::Run(command))
   }
 
+  /// Parses an expression and wraps the resulting [`ExprKind`] together
+  /// with its source [`Range`] into an [`Expr`]. Currently every
+  /// expression is a single primary (see [`Parser::primary`]); there are
+  /// no operators or precedence levels yet.
   fn expression(&mut self) -> PResult<Expr> {
     let (kind, range) = self.with_range(|p| p.primary())?;
 
     Ok(Expr { kind, range })
   }
 
+  /// Parses a primary expression by consuming one token. Recognized forms:
+  ///
+  /// - an f-string literal, producing [`ExprKind::FStringExpr`];
+  /// - `match <string>`, producing [`ExprKind::MatchExpr`] with the
+  ///   string as its pattern.
+  ///
+  /// Returns [`ParseError::UnexpectedEof`] if the stream is empty, or an
+  /// "Expected a string or match keyword" error for any other token.
   fn primary(&mut self) -> PResult<ExprKind> {
     let tok = self.advance().ok_or(ParseError::UnexpectedEof)?.clone();
 
@@ -193,7 +214,14 @@ impl Parser {
         let pattern = self.expect_string("Expect string as pattern")?;
         Ok(ExprKind::MatchExpr(pattern))
       }
-      _ => self.expected_but_found(&tok, "Expected a string"),
+      _ => Err(ParseError::Expected {
+        message: format!(
+          "Expected a string or match keyword, but found '{}'{}",
+          tok.to_string(),
+          if tok.is_keyword() { " keyword" } else { "" }
+        ),
+        span: tok.span.clone(),
+      }),
     }
   }
 }

@@ -1,7 +1,7 @@
 use crate::{
   errors::parse_error::ParseError,
   lexer::tokens::{FStringPart, Token, TokenKind},
-  parser::{expr::ExprKind, parser::Parser},
+  parser::parser::Parser,
   primitives::{range::Range, result::PResult},
 };
 
@@ -108,18 +108,6 @@ impl Parser {
         span: tok.span.clone(),
       }),
     }
-  }
-
-  pub(crate) fn expected_but_found(&mut self, tok: &Token, message: &str) -> PResult<ExprKind> {
-    Err(ParseError::Expected {
-      message: format!(
-        "{}, but found '{}'{}",
-        message,
-        tok.to_string(),
-        if tok.is_keyword() { " keyword" } else { "" }
-      ),
-      span: tok.span.clone(),
-    })
   }
 
   /// Runs the given parsing function `f` and captures the [`Range`] of

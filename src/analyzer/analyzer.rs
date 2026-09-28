@@ -40,10 +40,12 @@ impl Analyzer {
   /// graph. Seeds the `args` variable from the given CLI `args` (joined
   /// with spaces), then processes each top-level statement in order:
   /// `var` declarations are resolved and stored (see
-  /// [`Analyzer::resolve_fstring`]), and `task` declarations are turned
-  /// into [`TaskPlan`]s (see [`Analyzer::resolve_task`]). After all
-  /// statements are processed, validates the task graph for cycles (see
-  /// [`Analyzer::detect_cycles`]).
+  /// [`Analyzer::resolve_expr`]), and `task` declarations are turned
+  /// into [`TaskPlan`]s (see [`Analyzer::resolve_task`]). A bare
+  /// expression statement at the top level is rejected with
+  /// [`AnalyzeError::UnexpectedExpression`]. After all statements are
+  /// processed, validates the task graph for cycles and unknown
+  /// dependencies (see [`Analyzer::detect_cycles`]).
   pub fn analyze(&mut self, args: Vec<String>) -> AResult<&HashMap<String, TaskPlan>> {
     let args = args.join(" ");
     self.variables.insert("args".into(), args);
@@ -139,6 +141,12 @@ impl Analyzer {
     Ok(value)
   }
 
+  /// Resolves an expression to the string value stored in a variable.
+  /// An f-string expression is interpolated directly (see
+  /// [`Analyzer::resolve_fstring`]). A `match` expression is expanded to
+  /// the list of files matching its pattern (see
+  /// [`Analyzer::resolve_match_pattern`]), which are joined with single
+  /// spaces into one string.
   fn resolve_expr(&mut self, expr: Expr, range: Range) -> AResult<String> {
     let value = match &expr.kind {
       ExprKind::MatchExpr(pattern) => self.resolve_match_pattern(pattern, range)?.join(" "),
@@ -148,6 +156,11 @@ impl Analyzer {
     Ok(value)
   }
 
+  /// Expands a `match` pattern into the files it matches. The pattern is
+  /// itself an f-string, so it is first interpolated (see
+  /// [`Analyzer::resolve_fstring`]) and then searched for under
+  /// `self.root` via [`find_files`]. Returns the matching paths, or an
+  /// error if interpolation fails.
   fn resolve_match_pattern(
     &mut self,
     pattern: &Vec<FStringPart>,
